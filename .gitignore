@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.env
+.Python
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node / Next.js (future)
+node_modules/
+.next/
+out/
+dist/
+
+# Vector DBs / local artifacts
+chroma_db/
+*.chroma/
+.cache/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Large assets (GitHub 100MB limit)
+**/synthetic-recipe-images.zip
