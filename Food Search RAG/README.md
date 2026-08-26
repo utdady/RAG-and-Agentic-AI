@@ -15,7 +15,7 @@ pip install -r requirements.txt
 python download_data.py
 ```
 
-Copy `env.example` → `.env`, or reuse `Meeting Assistant/.env` (RAG chat loads it).
+Copy repo-root `env.example` → `.env` (preferred). Optional per-project `.env` overrides.
 
 ## Entry points
 

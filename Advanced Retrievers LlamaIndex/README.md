@@ -15,7 +15,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Copy `env.example` → `.env`, or reuse `Meeting Assistant/.env` (this lab loads it).
+Copy repo-root `env.example` → `.env` (preferred). Optional per-project `.env` overrides.
 
 Optional: `SKIP_DOC_SUMMARY=true` to avoid extra LLM calls when building the summary index.
 

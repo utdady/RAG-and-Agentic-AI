@@ -21,7 +21,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-4. Copy `env.example` → `.env` and set `GROQ_API_KEY` (or leave it empty to use Ollama).
+4. Copy repo-root `env.example` → `.env` and set `GROQ_API_KEY` (or leave it empty to use Ollama). Optional `Meeting Assistant/.env` only for project-specific overrides.
 
 5. (Optional) download the lab sample audio:
 

@@ -17,7 +17,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Copy `env.example` → `.env`, or reuse `Meeting Assistant/.env`.
+Copy repo-root `env.example` → `.env` (preferred). Optional per-project `.env` overrides.
 
 ```powershell
 cd context_retrieval

@@ -6,17 +6,15 @@ import sys
 from pathlib import Path
 
 import gradio as gr
-from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 HERE = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-load_dotenv(HERE / ".env")
-load_dotenv(ROOT / ".env")
-load_dotenv(ROOT / "Meeting Assistant" / ".env")
+from shared.env_load import load_env
 
+load_env(HERE)
 from shared.llm import describe_setup, get_llm_info
 
 llm, info = get_llm_info(temperature=0.5)

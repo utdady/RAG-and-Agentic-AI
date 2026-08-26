@@ -11,7 +11,6 @@ import sys
 from pathlib import Path
 
 import gradio as gr
-from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -23,13 +22,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from shared.embeddings import get_embedding_model, resolve_embedding_model
+from shared.env_load import load_env
 from shared.llm import describe_setup, get_llm_info
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
-load_dotenv(ROOT / ".env")
-# Also reuse Meeting Assistant .env if present (same Groq key)
-load_dotenv(ROOT / "Meeting Assistant" / ".env")
-
+load_env(Path(__file__).resolve().parent)
 llm, llm_info = get_llm_info(temperature=0.3)
 embeddings = get_embedding_model()
 print(describe_setup())

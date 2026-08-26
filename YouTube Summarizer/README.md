@@ -13,7 +13,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-2. Copy `env.example` → `.env` and set `GROQ_API_KEY`, **or** keep using `Meeting Assistant/.env` (this app also loads that file).
+2. Copy repo-root `env.example` → `.env` and set `GROQ_API_KEY` (preferred). Optional per-project `.env` overrides.
 
 3. For local-only LLM: install [Ollama](https://ollama.com) and leave `GROQ_API_KEY` empty.
 

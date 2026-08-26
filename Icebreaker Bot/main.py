@@ -15,12 +15,9 @@ if str(ROOT) not in sys.path:
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-from dotenv import load_dotenv
+from shared.env_load import load_env
 
-load_dotenv(HERE / ".env")
-load_dotenv(ROOT / ".env")
-load_dotenv(ROOT / "Meeting Assistant" / ".env")
-
+load_env(HERE)
 import config
 from modules.data_extraction import extract_linkedin_profile
 from modules.data_processing import (

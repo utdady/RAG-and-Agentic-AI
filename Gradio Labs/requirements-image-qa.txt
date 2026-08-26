@@ -1,0 +1,13 @@
+# Extra deps for 08 (image Q&A) and optional BLIP fallback.
+#   pip install -r requirements-image-qa.txt
+
+-r requirements.txt
+langchain-groq>=0.2.0
+langchain-ollama>=0.2.0
+langchain-core>=0.3.0
+Pillow>=10.0.0
+requests>=2.31.0
+transformers>=4.41.0
+torch>=2.0.0
+python-dotenv>=1.0.0
+psutil>=5.9.0

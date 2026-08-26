@@ -23,13 +23,9 @@ DATA = HERE / "data"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from dotenv import load_dotenv
+from shared.env_load import load_env
 
-load_dotenv(HERE / ".env")
-load_dotenv(HERE.parent / ".env")
-load_dotenv(ROOT / ".env")
-load_dotenv(ROOT / "Meeting Assistant" / ".env")
-
+load_env(HERE)
 from langchain.retrievers import ParentDocumentRetriever
 from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.retrievers.self_query.base import SelfQueryRetriever
@@ -41,6 +37,7 @@ from langchain.chains.query_constructor.base import AttributeInfo
 from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter
 
 from shared.embeddings import get_embedding_model, resolve_embedding_model
+from shared.env_load import load_env
 from shared.llm import describe_setup, get_llm_info
 
 # ensure assets

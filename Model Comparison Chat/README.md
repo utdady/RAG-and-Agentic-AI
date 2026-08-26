@@ -15,7 +15,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Copy `env.example` → `.env`, or reuse `Meeting Assistant/.env` for `GROQ_API_KEY`.
+Copy repo-root `env.example` → `.env` and set `GROQ_API_KEY` (preferred).
 
 Without a Groq key, each slot falls back to its Ollama model (pull those models first).
 

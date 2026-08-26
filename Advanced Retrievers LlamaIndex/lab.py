@@ -19,12 +19,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from dotenv import load_dotenv
+from shared.env_load import load_env
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
-load_dotenv(ROOT / ".env")
-load_dotenv(ROOT / "Meeting Assistant" / ".env")
-
+load_env(Path(__file__).resolve().parent)
 from llama_index.core import (
     Document,
     DocumentSummaryIndex,
@@ -44,6 +41,7 @@ from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.retrievers.bm25 import BM25Retriever
 
+from shared.env_load import load_env
 from shared.llama_index_llm import describe_llama_index_llm, get_llama_index_llm
 
 try:

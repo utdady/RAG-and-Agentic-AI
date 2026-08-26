@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 
 import gradio as gr
-from dotenv import load_dotenv
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from transformers import pipeline
@@ -17,11 +16,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from shared.env_load import load_env
 from shared.llm import describe_setup, get_llm_info, resolve_whisper_model
 
-# Project .env first, then repo-root .env (does not override existing vars)
-load_dotenv(Path(__file__).resolve().parent / ".env")
-load_dotenv(ROOT / ".env")
+# Repo-root .env, then project .env (override)
+load_env(Path(__file__).resolve().parent)
 
 ENABLE_PRODUCT_ASSISTANT = (
     os.getenv("ENABLE_PRODUCT_ASSISTANT", "false").lower() == "true"

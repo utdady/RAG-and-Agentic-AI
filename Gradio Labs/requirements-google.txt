@@ -1,0 +1,8 @@
+# Extra deps for 09 (Google Gemini text→image).
+#   pip install -r requirements-google.txt
+# Get a key: https://aistudio.google.com/apikey
+
+-r requirements.txt
+google-genai>=1.0.0
+Pillow>=10.0.0
+python-dotenv>=1.0.0

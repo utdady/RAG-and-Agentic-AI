@@ -16,12 +16,9 @@ for p in (ROOT, HERE):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
-from dotenv import load_dotenv
+from shared.env_load import load_env
 
-load_dotenv(HERE / ".env")
-load_dotenv(LABS / ".env")
-load_dotenv(ROOT / ".env")
-load_dotenv(ROOT / "Meeting Assistant" / ".env")
+load_env(HERE)
 
 
 def banner(title: str) -> None:
@@ -31,9 +28,3 @@ def banner(title: str) -> None:
     print(title)
     print(describe_setup())
     print("=" * 60)
-
-
-def ask(llm, prompt: str) -> str:
-    """Invoke chat model and return text content."""
-    out = llm.invoke(prompt)
-    return getattr(out, "content", out)

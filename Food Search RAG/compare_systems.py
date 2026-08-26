@@ -10,13 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from dotenv import load_dotenv
-
 HERE = Path(__file__).resolve().parent
-load_dotenv(HERE / ".env")
-load_dotenv(ROOT / ".env")
-load_dotenv(ROOT / "Meeting Assistant" / ".env")
 
+from shared.env_load import load_env
+
+load_env(HERE)
 from download_data import main as download_assets
 from shared_food import (
     create_similarity_search_collection,
