@@ -47,3 +47,16 @@ Pattern:
 
 **This repo:** `04_reflection_agent.py`; mermaid text instead of PNG; `shared.llm`.
 Not the Icebreaker Bot (profile RAG).
+
+---
+
+# Reflection + External Knowledge (Tavily)
+
+Course: OpenAI `gpt-4.1-nano` + `TavilySearchResults` + MessageGraph:
+`respond` (`AnswerQuestion` tool schema) ? `execute_tools` ? `revisor` (`ReviseAnswer`)
+? loop until `MAX_ITERATIONS` tool visits. Opinionated carnivore-MD style system prompt.
+
+**Do not commit Tavily keys.** Course paste included a plaintext `tvly-…` key — rotate if exposed.
+
+**This repo:** `05_reflection_with_search.py`; `TAVILY_API_KEY` via `.env`; `shared.llm`;
+softer disclaimer (not medical advice); default `REFLECT_SEARCH_MAX_ITERS=2` (course used 4).
