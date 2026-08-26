@@ -1,7 +1,10 @@
 # MCP Labs
 
 Curriculum labs for **MCP**: Context7 clients, LangGraph hosts, Calculator MCP,
-enhanced File Operations, and a **from-scratch mcp SDK client**.
+enhanced File Operations, and a from-scratch mcp SDK client.
+
+Related Gradio HTTP app (streamable HTTP + roots + AI host):  
+[`../MCP HTTP Lab/`](../MCP%20HTTP%20Lab/)
 
 Related: [`../Module 4 Integrate Agents, RAG, and Tools with MCP/`](../Module%204%20Integrate%20Agents,%20RAG,%20and%20Tools%20with%20MCP/)
 
