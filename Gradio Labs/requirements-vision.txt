@@ -1,0 +1,9 @@
+# Extra deps for 04 (BLIP) and 05 (ResNet). Install after requirements.txt:
+#   pip install -r requirements-vision.txt
+
+-r requirements.txt
+transformers>=4.41.0
+torch>=2.0.0
+torchvision>=0.15.0
+Pillow>=10.0.0
+requests>=2.31.0
