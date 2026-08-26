@@ -1,0 +1,33 @@
+ingredient_detection_task:
+  description: >
+    Detect the ingredients from the image at path '{uploaded_image}' using the
+    Extract ingredients tool, then clean the list with Filter ingredients.
+    Pass the exact file path '{uploaded_image}' to the vision tool.
+  expected_output: >
+    A cleaned comma-separated list of detected ingredients from the image.
+
+dietary_filtering_task:
+  description: >
+    Filter the detected ingredients based on user dietary restrictions:
+    '{dietary_restrictions}'. Use the Filter based on dietary restrictions tool
+    with the prior ingredient list. If restrictions are empty, keep all ingredients.
+  expected_output: >
+    A list of filtered ingredients based on dietary restrictions.
+
+nutrient_analysis_task:
+  description: >
+    Analyze the dish in image '{uploaded_image}' with the Analyze nutritional
+    values tool (pass that exact path). Produce a structured nutrient report
+    with dish name, portion, calories, macros, vitamins/minerals, and a short
+    health evaluation. Estimates only — not medical advice.
+  expected_output: >
+    Structured nutrient analysis matching the output schema.
+
+recipe_suggestion_task:
+  description: >
+    Using the filtered ingredients from the previous step and dietary
+    restrictions '{dietary_restrictions}', suggest 2–3 creative recipes that
+    use those ingredients. Include title, ingredients list, step-by-step
+    instructions, and a calorie estimate per serving for each recipe.
+  expected_output: >
+    Suggested recipes based on the filtered ingredients (structured JSON schema).
