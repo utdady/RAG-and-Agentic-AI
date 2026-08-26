@@ -1,8 +1,8 @@
 # LangGraph 101
 
-Intro to **LangGraph `StateGraph`**: TypedDict state, nodes, edges, routers, loops.
+Intro to **LangGraph**: `StateGraph` basics plus a **MessageGraph** reflection loop.
 
-Course Watsonx / OpenAI → Groq/Ollama via [`../../shared/llm.py`](../../shared/llm.py) (QA script only).
+Course Watsonx → Groq/Ollama via [`../../shared/llm.py`](../../shared/llm.py).
 
 Prebuilt ReAct agents live in product apps (`AI Math Assistant`, etc.); this folder builds graphs by hand.
 
@@ -15,6 +15,7 @@ cd langgraph_101
 python 01_auth_graph.py
 python 02_qa_graph.py
 python 03_loop_graph.py
+python 04_reflection_agent.py
 ```
 
 ## Scripts
@@ -24,6 +25,7 @@ python 03_loop_graph.py
 | `01_auth_graph.py` | Auth validate → success / failure |
 | `02_qa_graph.py` | Validate → context → LLM |
 | `03_loop_graph.py` | Conditional loop until `n >= 13` |
+| `04_reflection_agent.py` | LinkedIn post generate ↔ reflect loop |
 
 ## Reference
 

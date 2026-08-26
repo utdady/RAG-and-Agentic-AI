@@ -32,3 +32,18 @@ Course: `langgraph==0.2.57` + Watsonx / optional OpenAI. Notebook walks
 ## Layout
 
 `01_auth_graph.py`, `02_qa_graph.py`, `03_loop_graph.py`
+
+---
+
+# Reflection Agent (MessageGraph)
+
+Course: generate LinkedIn post ? reflect as critique (`HumanMessage`) ? revise;
+stop when `len(state) > 6`. Watsonx Granite + optional `pygraphviz` / `draw_png`.
+
+Pattern:
+- `generation_prompt | llm` / `reflection_prompt | llm`
+- `MessageGraph`: entry `generate`, conditional ? `reflect` or `END`, edge `reflect ? generate`
+- Critique as `HumanMessage` so the next generate sees feedback as user input
+
+**This repo:** `04_reflection_agent.py`; mermaid text instead of PNG; `shared.llm`.
+Not the Icebreaker Bot (profile RAG).
