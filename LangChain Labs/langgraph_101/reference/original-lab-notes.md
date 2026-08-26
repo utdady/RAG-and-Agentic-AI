@@ -60,3 +60,16 @@ Course: OpenAI `gpt-4.1-nano` + `TavilySearchResults` + MessageGraph:
 
 **This repo:** `05_reflection_with_search.py`; `TAVILY_API_KEY` via `.env`; `shared.llm`;
 softer disclaimer (not medical advice); default `REFLECT_SEARCH_MAX_ITERS=2` (course used 4).
+
+---
+
+# Reasoning and Acting (ReAct) with LangGraph
+
+Course: OpenAI + Tavily `search_tool`, `recommend_clothing`, then exercises for
+safe `calculator_tool` (AST) and `news_summarizer_tool`.
+`AgentState` with `add_messages`; nodes `agent` / `tools`; conditional continue|end.
+
+Hardcoded Tavily keys in the notebook — **never commit**; use `.env`.
+
+**This repo:** `06_react_agent.py` with all four tools wired; `shared.llm`; mermaid graph.
+Vs `fundamentals/09_agents.py` (LangChain AgentExecutor) and product `create_react_agent` apps.

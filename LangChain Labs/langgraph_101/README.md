@@ -17,6 +17,7 @@ python 02_qa_graph.py
 python 03_loop_graph.py
 python 04_reflection_agent.py
 python 05_reflection_with_search.py   # needs TAVILY_API_KEY in repo-root .env
+python 06_react_agent.py              # needs TAVILY_API_KEY; weather + calc + news
 ```
 
 ## Scripts
@@ -28,8 +29,9 @@ python 05_reflection_with_search.py   # needs TAVILY_API_KEY in repo-root .env
 | `03_loop_graph.py` | Conditional loop until `n >= 13` |
 | `04_reflection_agent.py` | LinkedIn post generate ↔ reflect loop |
 | `05_reflection_with_search.py` | Structured answer → Tavily → revise loop |
+| `06_react_agent.py` | Hand-built ReAct: agent ↔ tools (search, clothes, calc, news) |
 
-`05` is an educational demo (not medical advice). Prefer Groq for `bind_tools`.
+`05` / `06` need `TAVILY_API_KEY`. Prefer Groq for `bind_tools`. `05` is educational (not medical advice).
 
 ## Reference
 
