@@ -24,6 +24,9 @@ In repo-root `.env`:
 python 01_research_writer_crew.py
 python 01_research_writer_crew.py --topic "Edge AI chips 2026"
 python 01_research_writer_crew.py --no-social
+python 02_tools_vs_tasks.py --mode all
+python 02_tools_vs_tasks.py --mode task --query "Do you have vegan options?"
+python 02_tools_vs_tasks.py --mode calc
 ```
 
 ## Scripts
@@ -31,6 +34,9 @@ python 01_research_writer_crew.py --no-social
 | Script | Topic |
 |--------|--------|
 | `01_research_writer_crew.py` | Sequential: research (Serper) → blog → social posts |
+| `02_tools_vs_tasks.py` | Agent-centric vs task-centric tools; custom calculator `@tool` |
+
+`02` downloads The Daily Dish FAQ PDF into `data/` on first run.
 
 ## Reference
 

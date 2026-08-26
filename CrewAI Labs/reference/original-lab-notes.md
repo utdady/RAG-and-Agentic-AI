@@ -28,3 +28,17 @@ any key that was pasted into chat.
 ## This repo
 
 `01_research_writer_crew.py` with Groq/Ollama LLM mapping and `--topic` / `--no-social` CLI.
+
+---
+
+# Tools versus Tasks with Tools
+
+Course: CrewAI + `PDFSearchTool` (HuggingFace MiniLM) + `SerperDevTool` on
+The Daily Dish FAQ. Compares:
+1. **Agent-centric** — tools attached to the Agent
+2. **Task-centric** — tools attached to Tasks; agent `tools=[]`
+3. Custom `@tool` add/multiply calculator
+
+Watsonx Granite ? Groq/Ollama. Hardcoded Serper keys omitted (use `.env`).
+
+**This repo:** `02_tools_vs_tasks.py` with `--mode agent|task|calc|all`.
