@@ -27,4 +27,5 @@ print(describe_setup())  # e.g. LLM=groq:llama-3.1-8b-instant (tier=mid); Whispe
 
 Install: `pip install -r shared/requirements.txt`
 
-Also see `shared/embeddings.py` for local HuggingFace embeddings used by FAISS/RAG apps.
+Also see `shared/embeddings.py` for local HuggingFace embeddings used by FAISS/RAG apps,
+and `shared/llama_index_llm.py` for Groq/Ollama under LlamaIndex (`get_llama_index_llm`).
