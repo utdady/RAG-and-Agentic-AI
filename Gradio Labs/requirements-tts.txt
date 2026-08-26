@@ -1,0 +1,5 @@
+# Extra dep for 06 (storyteller). Install after requirements.txt:
+#   pip install -r requirements-tts.txt
+
+-r requirements.txt
+gTTS>=2.5.0
