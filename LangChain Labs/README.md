@@ -5,6 +5,7 @@ Curriculum labs for LangChain — not a Gradio/Flask product.
 | Folder | What it covers |
 |--------|----------------|
 | [`fundamentals/`](fundamentals/) | Prompts, parsers, loaders, RAG basics, memory, LCEL chains, ReAct agents |
+| [`prompt_engineering/`](prompt_engineering/) | Zero/one/few-shot, CoT, PromptTemplate + LCEL task patterns |
 | [`context_retrieval/`](context_retrieval/) | Chroma retrievers: MMR, MultiQuery, SelfQuery, ParentDocument |
 
 **LLM:** Groq / Ollama via [`../shared/llm.py`](../shared/llm.py)  
@@ -24,7 +25,8 @@ Copy `env.example` → `.env`, or reuse `Meeting Assistant/.env`.
 ## Suggested order
 
 1. `fundamentals/01` → `09` (core LangChain path)
-2. `context_retrieval/lab.py` (advanced retrievers; overlaps lightly with `06_rag_basics`)
+2. `prompt_engineering/01` → `03` (deeper prompting; overlaps lightly with `fundamentals/03`)
+3. `context_retrieval/lab.py` (advanced retrievers; overlaps lightly with `06_rag_basics`)
 
 ## Reference
 

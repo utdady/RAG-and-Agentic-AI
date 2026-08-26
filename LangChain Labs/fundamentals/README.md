@@ -21,7 +21,8 @@ python 09_agents.py
 
 `05` / `06` reuse PDFs/text from [`../context_retrieval/data`](../context_retrieval/data) (auto-download if missing).
 
-Advanced Chroma retrievers (MultiQuery, SelfQuery, ParentDocument) → [`../context_retrieval/`](../context_retrieval/).
+Advanced Chroma retrievers (MultiQuery, SelfQuery, ParentDocument) → [`../context_retrieval/`](../context_retrieval/).  
+Deeper zero/one/few-shot + CoT → [`../prompt_engineering/`](../prompt_engineering/).
 
 ## Scripts
 
