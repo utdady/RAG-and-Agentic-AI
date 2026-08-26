@@ -11,23 +11,30 @@ Course bug: `if __name__ == "main"` → `"__main__"`.
 
 ## Lab C — MCP Server (Calculator)
 
-FastMCP `CalculatorMCPServer`: `add` / `subtract`, resources, `review_code` prompt.
-In-memory `Client(mcp)`, HTTP `run_http_async` on port 8000, stdio subprocess,
-LangGraph + `load_mcp_tools` / `MultiServerMCPClient`.
+FastMCP `CalculatorMCPServer`: `add` / `subtract`, resources, prompts.
+In-memory / HTTP / stdio clients + LangGraph host.
 
-Course wrote `stdio_server.py` with a broken resource f-string
-(`return "Document contents of {name"`); fixed in `servers/calculator_server.py`.
+## Lab D — Enhanced MCP Server (File Operations)
+
+Course repo: `joshuazhou744/enhanced-mcp-server` (branch `start`).
+
+- Server: `write_file` / `delete_file` with `ctx.report_progress`, resources
+  `file:///` + `dir://.`, prompts `code_review` + `documentation_generator`
+  (elicitation via `DocumentGeneratorSchema`)
+- Client: FastMCP handlers (elicitation, progress, messages) + Anthropic Claude
+  agentic tool loop + interactive menu
 
 ## This repo
 
-**Clubbed:** `MCP Labs/` (`00`–`06`).
+**Clubbed:** `MCP Labs/` (`00`–`07`).
 
 | Course | Here |
 |--------|------|
 | Context7 clients | `00`–`02` |
 | Multi-server app | `03` |
-| Calculator server notebook | `04`–`06` + `servers/calculator_server.py` |
-| OpenAI models | Groq/Ollama |
-| `path/` wget docs | `data/path/` via `_data.ensure_sample_docs()` |
+| Calculator server | `04`–`06` + `servers/calculator_server.py` |
+| Enhanced file-ops | `servers/file_ops_server.py` + `07_file_ops_mcp_client.py` |
+| Claude Sonnet | Groq/Ollama via LangGraph ReAct for agent turns |
+| `Path.cwd()` sandbox | `MCP Labs/workspace/` |
 
 Cross-link: Module 4 Connoisseur restaurant MCP server.
