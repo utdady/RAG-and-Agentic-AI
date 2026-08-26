@@ -1,0 +1,9 @@
+# Extra deps for 07 (Whisper ASR). Install after requirements.txt:
+#   pip install -r requirements-asr.txt
+# (Also covered if you already installed requirements-vision.txt)
+
+-r requirements.txt
+transformers>=4.41.0
+torch>=2.0.0
+python-dotenv>=1.0.0
+psutil>=5.9.0
