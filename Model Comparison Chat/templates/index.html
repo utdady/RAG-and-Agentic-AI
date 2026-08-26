@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Comparison Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="font-ibm-plex">
+    <div class="app-container">
+        <div class="header">
+            <div class="header-content">
+                <h1 class="header-title">Model Comparison Chat</h1>
+                <button id="clearBtn" class="clear-btn" type="button" style="display: none;">
+                    Clear Chat
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="messages-area">
+                <div class="messages-content">
+                    <div id="welcomeScreen" class="welcome-screen">
+                        <h2 class="welcome-title">Choose a model and start chatting</h2>
+                        <p class="welcome-text">
+                            Compare speed and quality across slots (fast / balanced / quality).
+                            Responses include a short summary, sentiment score, and suggested reply.
+                        </p>
+                    </div>
+
+                    <div id="messagesContainer" class="messages-container"></div>
+
+                    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                        <div class="loading-bubble">
+                            <div class="loading-content">
+                                <div class="loading-dots">
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                    <div class="dot"></div>
+                                </div>
+                                <span class="loading-text">AI is thinking...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="messagesEnd"></div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <div class="input-content">
+                    <form id="chatForm" class="chat-form">
+                        <div class="model-section">
+                            <span class="model-label">Model:</span>
+                            <div class="select-wrapper">
+                                <select id="modelSelect" class="model-select">
+                                    {% for key, slot in model_slots.items() %}
+                                    <option value="{{ key }}">{{ slot.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-section">
+                            <div class="textarea-container">
+                                <textarea
+                                    id="messageInput"
+                                    class="message-textarea"
+                                    placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+                                    rows="1"
+                                ></textarea>
+                            </div>
+                            <button type="submit" id="sendButton" class="send-button">
+                                <span id="sendIcon">Send</span>
+                                <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                                    <div class="spinner"></div>
+                                </div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
