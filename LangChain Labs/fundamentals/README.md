@@ -17,12 +17,14 @@ python 06_rag_basics.py
 python 07_memory.py
 python 08_chains_lcel.py
 python 09_agents.py
+python 10_tool_calling_loop.py
 ```
 
 `05` / `06` reuse PDFs/text from [`../context_retrieval/data`](../context_retrieval/data) (auto-download if missing).
 
 Advanced Chroma retrievers (MultiQuery, SelfQuery, ParentDocument) → [`../context_retrieval/`](../context_retrieval/).  
-Deeper zero/one/few-shot + CoT → [`../prompt_engineering/`](../prompt_engineering/).
+Deeper zero/one/few-shot + CoT → [`../prompt_engineering/`](../prompt_engineering/).  
+Product-style multi-tool math agent → [`../../AI Math Assistant/`](../../AI%20Math%20Assistant/).
 
 ## Scripts
 
@@ -37,6 +39,7 @@ Deeper zero/one/few-shot + CoT → [`../prompt_engineering/`](../prompt_engineer
 | `07_memory.py` | RunnableWithMessageHistory |
 | `08_chains_lcel.py` | LCEL pipes (incl. sequential) |
 | `09_agents.py` | ReAct tools (safe calculator) |
+| `10_tool_calling_loop.py` | Manual bind_tools / ToolMessage loop + tip tool |
 
 ## Reference
 

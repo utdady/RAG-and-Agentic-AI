@@ -1375,3 +1375,31 @@ for question in test_questions:
     result = agent_executor.invoke({"input": question})
     print(f"Final Answer: {result['output']}")
 ```
+
+---
+
+# Interactive LLM Agents (manual tool-calling loop)
+
+Course: OpenAI `init_chat_model("gpt-4o-mini")` / optional Watsonx.
+Runnable here: `10_tool_calling_loop.py` (Groq/Ollama).
+
+## Flow taught
+
+1. `@tool` add / subtract / multiply
+2. `llm.bind_tools(tools)`
+3. Invoke with `HumanMessage`; read `response.tool_calls`
+4. `tool_map[name].invoke(args)` ? `ToolMessage`
+5. Append AI + tool messages; invoke again for final `content`
+6. Wrap as `ToolCallingAgent`
+7. Exercise: `calculate_tip` + `TipAgent`
+
+## Notebook issues (fixed in script)
+
+- `return response.contet` typo ? `content`
+- `TipAgent.run` used module-level `llm_with_tool` / `tool_map` instead of `self`
+- Early cells referenced `chat_history` before it was fully defined in the paste
+
+## vs other labs
+
+- `09_agents.py`: ReAct `AgentExecutor`
+- `AI Math Assistant`: LangGraph product UI with more tools + Wikipedia
