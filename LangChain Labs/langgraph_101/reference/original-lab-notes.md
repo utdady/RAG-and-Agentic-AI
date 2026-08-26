@@ -73,3 +73,18 @@ Hardcoded Tavily keys in the notebook — **never commit**; use `.env`.
 
 **This repo:** `06_react_agent.py` with all four tools wired; `shared.llm`; mermaid graph.
 Vs `fundamentals/09_agents.py` (LangChain AgentExecutor) and product `create_react_agent` apps.
+
+---
+
+# Workflow patterns with LangGraph
+
+Course: OpenAI `gpt-4o-mini` (+ `httpx` verify=False) and `pygraphviz`.
+
+Patterns:
+1. Sequential chain — resume summary ? cover letter
+2. Router — summarize vs translate via `bind_tools`
+3. Parallel — `START` ? FR/ES/JA ? aggregator ? `END`
+4. Exercise — ride / restaurant / groceries / default_handler router
+
+**This repo:** `07_workflow_patterns.py`; `shared.llm`; edges to `END` instead of
+`set_finish_point`; mermaid instead of PNG.

@@ -18,6 +18,7 @@ python 03_loop_graph.py
 python 04_reflection_agent.py
 python 05_reflection_with_search.py   # needs TAVILY_API_KEY in repo-root .env
 python 06_react_agent.py              # needs TAVILY_API_KEY; weather + calc + news
+python 07_workflow_patterns.py        # chain, router, parallel, multi-router
 ```
 
 ## Scripts
@@ -30,6 +31,7 @@ python 06_react_agent.py              # needs TAVILY_API_KEY; weather + calc + n
 | `04_reflection_agent.py` | LinkedIn post generate ↔ reflect loop |
 | `05_reflection_with_search.py` | Structured answer → Tavily → revise loop |
 | `06_react_agent.py` | Hand-built ReAct: agent ↔ tools (search, clothes, calc, news) |
+| `07_workflow_patterns.py` | Chain, router, parallel fan-out, multi-service router |
 
 `05` / `06` need `TAVILY_API_KEY`. Prefer Groq for `bind_tools`. `05` is educational (not medical advice).
 

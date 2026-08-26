@@ -5,7 +5,7 @@ Curriculum labs for LangChain — not a Gradio/Flask product.
 | Folder | What it covers |
 |--------|----------------|
 | [`fundamentals/`](fundamentals/) | Prompts, parsers, loaders, RAG, memory, LCEL, ReAct, tool-calling (+ YouTube tools) |
-| [`langgraph_101/`](langgraph_101/) | StateGraph, reflection, Tavily search, hand-built ReAct |
+| [`langgraph_101/`](langgraph_101/) | StateGraph patterns, reflection, Tavily, ReAct, workflow patterns |
 | [`prompt_engineering/`](prompt_engineering/) | Zero/one/few-shot, CoT, PromptTemplate + LCEL task patterns |
 | [`document_rag/`](document_rag/) | Private-doc Chroma QA, custom prompts, conversational RAG |
 | [`context_retrieval/`](context_retrieval/) | Chroma retrievers: MMR, MultiQuery, SelfQuery, ParentDocument |
@@ -27,7 +27,7 @@ Copy repo-root `env.example` → `.env` (preferred). Optional per-project `.env`
 ## Suggested order
 
 1. `fundamentals/01` → `11` (core LangChain path)
-2. `langgraph_101/01` → `06` (graphs, reflection, search, ReAct; after tool-calling labs)
+2. `langgraph_101/01` → `07` (graphs, reflection, search, ReAct, workflow patterns)
 3. `prompt_engineering/01` → `03` (deeper prompting; overlaps lightly with `fundamentals/03`)
 4. `document_rag/01` → `03` (private-doc QA + conversational memory)
 5. `context_retrieval/lab.py` (advanced retrievers; overlaps lightly with `06_rag_basics`)
