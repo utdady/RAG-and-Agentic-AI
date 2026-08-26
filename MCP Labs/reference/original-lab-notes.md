@@ -1,32 +1,33 @@
-# MCP Servers (FastMCP + Context7) + MCP Application (LangGraph)
+# MCP Labs course notes
 
 ## Lab A — FastMCP + Context7 client
 
-Course notebook: Python I/O warm-up, then FastMCP `Client` against Context7 via
-stdio (`npx @upstash/context7-mcp`) and HTTP (`https://mcp.context7.com/mcp`).
+Python I/O warm-up, then FastMCP `Client` against Context7 (stdio + HTTP).
 
-- `fastmcp` (`Client`, `StdioTransport`, `StreamableHttpTransport`)
-- Context7 tools: `resolve-library-id`, `query-docs`
+## Lab B — MCP Application (LangGraph multi-server)
 
-## Lab B — MCP Application (LangGraph multi-server agent)
+`MultiServerMCPClient` — Context7 HTTP + Met Museum stdio + ReAct agent.
+Course bug: `if __name__ == "main"` → `"__main__"`.
 
-Course `main.py`:
+## Lab C — MCP Server (Calculator)
 
-- `langchain-mcp-adapters.MultiServerMCPClient` — Context7 HTTP + Met Museum stdio
-- `langgraph.prebuilt.create_react_agent` + `InMemorySaver`
-- OpenAI `ChatOpenAI(model="gpt-5-nano")` (course also listed langchain-ibm; unused)
-- CLI menu loop; bug: `if __name__ == "main"` → should be `"__main__"`
+FastMCP `CalculatorMCPServer`: `add` / `subtract`, resources, `review_code` prompt.
+In-memory `Client(mcp)`, HTTP `run_http_async` on port 8000, stdio subprocess,
+LangGraph + `load_mcp_tools` / `MultiServerMCPClient`.
+
+Course wrote `stdio_server.py` with a broken resource f-string
+(`return "Document contents of {name"`); fixed in `servers/calculator_server.py`.
 
 ## This repo
 
-**Clubbed:** `MCP Labs/` (`00`–`03`).
+**Clubbed:** `MCP Labs/` (`00`–`06`).
 
 | Course | Here |
 |--------|------|
-| FastMCP notebook | `00`–`02` |
-| MCP Application `main.py` | `03_langgraph_multiserver_agent.py` |
-| OpenAI / Watsonx | Groq/Ollama via `shared.llm.get_chat_llm` |
-| `__name__ == "main"` | Fixed |
+| Context7 clients | `00`–`02` |
+| Multi-server app | `03` |
+| Calculator server notebook | `04`–`06` + `servers/calculator_server.py` |
+| OpenAI models | Groq/Ollama |
+| `path/` wget docs | `data/path/` via `_data.ensure_sample_docs()` |
 
-Cross-link: Module 4 builds a local Connoisseur MCP server + Anthropic host.
-
+Cross-link: Module 4 Connoisseur restaurant MCP server.

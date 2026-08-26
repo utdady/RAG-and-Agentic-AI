@@ -8,8 +8,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+SERVERS = HERE / "servers"
 
-for p in (ROOT, HERE):
+for p in (ROOT, HERE, SERVERS):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
