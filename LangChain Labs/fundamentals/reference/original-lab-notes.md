@@ -1403,3 +1403,26 @@ Runnable here: `10_tool_calling_loop.py` (Groq/Ollama).
 
 - `09_agents.py`: ReAct `AgentExecutor`
 - `AI Math Assistant`: LangGraph product UI with more tools + Wikipedia
+
+---
+
+# Tool Calling Agent (YouTube tools)
+
+Course: OpenAI `gpt-4o-mini` + pytube / youtube-transcript-api / yt-dlp.
+Runnable: `11_youtube_tool_agent.py`.
+
+## Tools
+
+- `extract_video_id`
+- `fetch_transcript`
+- `search_youtube` (course: pytube `Search` — often flaky)
+- `get_full_metadata` / `get_thumbnails` (yt-dlp)
+
+## Agent patterns in notebook
+
+1. Manual multi-turn: bind_tools ? ToolMessage ? … ? summary
+2. Fixed 2-step LCEL `summarization_chain` (breaks when more/fewer tool rounds needed)
+3. Recursive `universal_chain` (keep)
+4. TODO: direct tools + analysis prompt (no agent loop)
+
+**This repo:** recursive chain + yt-dlp search; analysis helper; Gradio product stays in YouTube Summarizer.
