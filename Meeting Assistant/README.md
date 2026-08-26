@@ -61,3 +61,4 @@ Already-pulled Ollama models are preferred when they fit the tier. Force with `H
 
 - Whisper is loaded once at startup.
 - Set `ENABLE_PRODUCT_ASSISTANT=true` for earnings-call acronym normalization (extra LLM call).
+- Original IBM lab paste (Watsonx, not runnable): [`reference/original-lab-notes.md`](reference/original-lab-notes.md).

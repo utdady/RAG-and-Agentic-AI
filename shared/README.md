@@ -26,3 +26,5 @@ print(describe_setup())  # e.g. LLM=groq:llama-3.1-8b-instant (tier=mid); Whispe
 **Ollama tiers** (when `OLLAMA_MODEL` unset): prefers an already-pulled model, else suggests `llama3.2:1b` / `llama3.2:3b` / `llama3.1:8b`.
 
 Install: `pip install -r shared/requirements.txt`
+
+Also see `shared/embeddings.py` for local HuggingFace embeddings used by FAISS/RAG apps.

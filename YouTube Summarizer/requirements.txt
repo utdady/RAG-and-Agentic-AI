@@ -1,9 +1,14 @@
-# Shared LLM stack (Groq + Ollama). Install from any project:
-#   pip install -r ../shared/requirements.txt
+gradio>=4.44.0,<6
+langchain>=0.3.0,<0.4
+langchain-community>=0.3.0,<0.4
 langchain-core>=0.3.0,<0.4
+langchain-text-splitters>=0.3.0
 langchain-groq>=0.2.0
 langchain-ollama>=0.2.0
 langchain-huggingface>=0.1.0
 sentence-transformers>=2.2.0
+faiss-cpu>=1.8.0
+youtube-transcript-api>=1.0.0
 python-dotenv>=1.0.0
 psutil>=5.9.0
+torch>=2.0.0

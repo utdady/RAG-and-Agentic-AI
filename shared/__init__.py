@@ -1,5 +1,6 @@
 """Shared utilities for RAG and Agentic AI projects."""
 
+from shared.embeddings import get_embedding_model, resolve_embedding_model
 from shared.llm import (
     describe_setup,
     detect_hardware_tier,
@@ -12,6 +13,8 @@ __all__ = [
     "describe_setup",
     "detect_hardware_tier",
     "get_chat_llm",
+    "get_embedding_model",
     "get_llm_info",
+    "resolve_embedding_model",
     "resolve_whisper_model",
 ]
