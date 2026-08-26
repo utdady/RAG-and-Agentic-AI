@@ -1,7 +1,7 @@
 # MCP Labs
 
-Curriculum labs for **MCP**: Context7 clients, multi-server LangGraph hosts,
-Calculator MCP, and an **enhanced File Operations** server (progress, elicitation).
+Curriculum labs for **MCP**: Context7 clients, LangGraph hosts, Calculator MCP,
+enhanced File Operations, and a **from-scratch mcp SDK client**.
 
 Related: [`../Module 4 Integrate Agents, RAG, and Tools with MCP/`](../Module%204%20Integrate%20Agents,%20RAG,%20and%20Tools%20with%20MCP/)
 
@@ -31,16 +31,10 @@ python 04_calculator_inmemory.py
 python 05_calculator_http_stdio_clients.py
 python 06_calculator_langgraph_agent.py
 python 07_file_ops_mcp_client.py
+python 08_custom_mcp_client.py
 ```
 
-Servers:
-
-```powershell
-python servers/calculator_server.py --http
-python servers/file_ops_server.py
-```
-
-File-ops sandbox: `workspace/` (see `sample_hello.py`).
+Lab **08** needs no LLM — interactive `tools | call | resources | read | prompts | prompt | quit`.
 
 ## Scripts
 
@@ -48,8 +42,9 @@ File-ops sandbox: `workspace/` (see `sample_hello.py`).
 |--------|--------|
 | `00`–`02` | Context7 FastMCP clients |
 | `03` | LangGraph + Context7 + Met Museum |
-| `04`–`06` | Calculator MCP (in-memory / HTTP+stdio / LangGraph) |
-| `07_file_ops_mcp_client.py` | Menu client: elicitation, progress, resources, Groq ReAct |
+| `04`–`06` | Calculator MCP |
+| `07` | File-ops server client (elicitation / progress / ReAct) |
+| `08_custom_mcp_client.py` | Official `mcp` SDK `ClientSession` + `lab_server` |
 
 ## Reference
 

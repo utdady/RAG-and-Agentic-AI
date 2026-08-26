@@ -24,17 +24,26 @@ Course repo: `joshuazhou744/enhanced-mcp-server` (branch `start`).
 - Client: FastMCP handlers (elicitation, progress, messages) + Anthropic Claude
   agentic tool loop + interactive menu
 
+## Lab E — Custom MCP Client (official SDK)
+
+Course “Custom MCP Client”: build `ClientSession` + `stdio_client` by hand against
+a simple FastMCP lab server (`echo`, `write_file`, resources, `review_file` prompt).
+
+Course bugs fixed: `def init` → `__init__`, `if __name__ == "main"` → `__main__`.
+
 ## This repo
 
-**Clubbed:** `MCP Labs/` (`00`–`07`).
+**Clubbed:** `MCP Labs/` (`00`–`08`).
 
 | Course | Here |
 |--------|------|
 | Context7 clients | `00`–`02` |
 | Multi-server app | `03` |
 | Calculator server | `04`–`06` + `servers/calculator_server.py` |
-| Enhanced file-ops | `servers/file_ops_server.py` + `07_file_ops_mcp_client.py` |
-| Claude Sonnet | Groq/Ollama via LangGraph ReAct for agent turns |
-| `Path.cwd()` sandbox | `MCP Labs/workspace/` |
+| Enhanced file-ops | `servers/file_ops_server.py` + `07` |
+| Custom MCP client | `08_custom_mcp_client.py` + `servers/lab_server.py` |
+| Claude / OpenAI | Groq/Ollama on agent labs; **08 needs no LLM** |
+| `Path.cwd()` / resources | `servers/lab_resources/` |
 
 Cross-link: Module 4 Connoisseur restaurant MCP server.
+
