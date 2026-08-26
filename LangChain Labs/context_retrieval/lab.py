@@ -16,7 +16,7 @@ from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]  # repo root (LangChain Labs/context_retrieval/)
 HERE = Path(__file__).resolve().parent
 DATA = HERE / "data"
 
@@ -26,6 +26,7 @@ if str(ROOT) not in sys.path:
 from dotenv import load_dotenv
 
 load_dotenv(HERE / ".env")
+load_dotenv(HERE.parent / ".env")
 load_dotenv(ROOT / ".env")
 load_dotenv(ROOT / "Meeting Assistant" / ".env")
 

@@ -4,19 +4,24 @@ Lab: smarter Chroma search patterns with LangChain — similarity, MMR, score th
 
 **Not a Gradio app.** Console script.
 
-- LLM: Groq / Ollama via [`../shared/llm.py`](../shared/llm.py)
-- Embeddings: local MiniLM via [`../shared/embeddings.py`](../shared/embeddings.py)
+- LLM: Groq / Ollama via [`../../shared/llm.py`](../../shared/llm.py)
+- Embeddings: local MiniLM via [`../../shared/embeddings.py`](../../shared/embeddings.py)
+- Sibling curriculum: [`../fundamentals/`](../fundamentals/)
 
 ## Setup
 
 ```powershell
-cd "LangChain Context Retrieval"
+cd "LangChain Labs"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
 Copy `env.example` → `.env`, or reuse `Meeting Assistant/.env`.
+
+```powershell
+cd context_retrieval
+```
 
 ## Run
 
