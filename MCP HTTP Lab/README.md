@@ -3,7 +3,7 @@
 Standalone Gradio apps for **Streamable HTTP MCP**: workspace **roots**, educational
 **sampling** stub, protocol client UI, and an AI host that calls MCP tools.
 
-Related curriculum: [`../MCP Labs/`](../MCP%20Labs/)
+Related curriculum: [`../MCP Labs/`](../MCP%20Labs/) · permissions lab: [`../MCP Security Lab/`](../MCP%20Security%20Lab/)
 
 ## Setup
 
