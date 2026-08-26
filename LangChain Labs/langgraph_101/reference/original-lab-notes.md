@@ -88,3 +88,21 @@ Patterns:
 
 **This repo:** `07_workflow_patterns.py`; `shared.llm`; edges to `END` instead of
 `set_finish_point`; mermaid instead of PNG.
+
+---
+
+# LangGraph Design Patterns
+
+Course: OpenAI `gpt-4o-mini`, optional litellm `ssl_verify=False`, pygraphviz.
+
+## A) Orchestrator–worker
+- `Dishes` structured plan from meals
+- `Send("chef_worker", …)` fan-out; `completed_menu` with `operator.add`
+- `synthesizer` joins worker outputs
+
+## B) Evaluator–optimizer
+- Target risk grade from profile
+- Initial bold plan ? evaluator structured `Feedback`
+- Route accept vs regenerate until grade matches (or iteration cap)
+
+**This repo:** `08_design_patterns.py`; `shared.llm`; educational disclaimers; no litellm.
