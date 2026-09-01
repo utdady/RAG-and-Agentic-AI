@@ -54,11 +54,8 @@ VISION = None
 
 
 def _vision() -> VisionFashionService:
-    global VISION
-    if VISION is None:
-        VISION = VisionFashionService()
-        print(f"Vision LLM: {VISION.label}")
-    return VISION
+    """Fresh vision client each call so model/env updates apply without stale cache."""
+    return VisionFashionService()
 
 
 def analyze_style(image):
@@ -82,12 +79,14 @@ def analyze_style(image):
     kind = "exact-ish match" if score >= threshold else "similar (below threshold)"
     meta = (
         f"**Similarity:** {score:.3f} ({kind}, threshold={threshold})\n\n"
-        f"**Matched image URL:** {image_url}\n\n"
         f"{catalog_table_markdown(related)}"
     )
 
+    vision_label = ""
     try:
-        raw = _vision().generate_fashion_response(
+        vision = _vision()
+        vision_label = vision.label
+        raw = vision.generate_fashion_response(
             encoded["base64"],
             match_row,
             related,
@@ -95,12 +94,10 @@ def analyze_style(image):
             threshold=threshold,
         )
         analysis = process_response(raw)
-        analysis = f"_Model: {_vision().label}_\n\n{analysis}"
     except Exception as e:
         analysis = (
-            f"# Fashion Analysis\n\n"
-            f"Vision LLM unavailable ({e}). Catalog match is shown below.\n\n"
-            f"{catalog_table_markdown(related)}"
+            f"## Fashion Analysis\n\n"
+            f"Vision LLM unavailable ({e}). See the catalog match below."
         )
 
     # Show matched catalog image if URL is fetchable; else user image
@@ -114,6 +111,8 @@ def analyze_style(image):
         pass
 
     status = f"Score={score:.3f} | items={len(related)} | {kind}"
+    if vision_label:
+        status = f"{vision_label} | {status}"
     return matched_preview, analysis, meta, status
 
 

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Lab — Live demos | Aditya</title>
+  <meta name="description" content="Interactive RAG and agentic AI demos: PDF QA, SQL agents, CrewAI, vision, and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --bg2: #12141a;
+      --surface: #171a22;
+      --line: rgba(255, 255, 255, 0.08);
+      --txt: #eef1f6;
+      --txt2: #9aa3b5;
+      --accent: #00e5c3;
+      --accent2: #7c6cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geist", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .back { font-size: 0.875rem; color: var(--txt2); margin-bottom: 2rem; display: inline-block; }
+    .back:hover { color: var(--accent); text-decoration: none; }
+    .eyebrow {
+      font-family: "Geist Mono", monospace;
+      font-size: 0.6875rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    h1 { font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 600; margin-top: 0.5rem; letter-spacing: -0.02em; }
+    .lead { color: var(--txt2); margin-top: 1rem; max-width: 42rem; font-size: 1.0625rem; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2rem; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.75rem 1.25rem; border-radius: 0.75rem;
+      font-weight: 500; font-size: 0.9375rem;
+      border: 1px solid transparent; transition: 0.15s ease;
+    }
+    .btn-primary { background: var(--accent); color: #041210; }
+    .btn-primary:hover { filter: brightness(1.08); text-decoration: none; }
+    .btn-ghost { border-color: var(--line); color: var(--txt); background: var(--surface); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+    section { margin-top: 3.5rem; }
+    h2 {
+      font-family: "Geist Mono", monospace;
+      font-size: 0.6875rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--txt2);
+      margin-bottom: 1rem;
+    }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      transition: border-color 0.15s ease;
+    }
+    .card:hover { border-color: rgba(0, 229, 195, 0.45); }
+    .card h3 { font-size: 1rem; font-weight: 500; }
+    .card p { font-size: 0.875rem; color: var(--txt2); margin-top: 0.5rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.75rem; }
+    .tag {
+      font-family: "Geist Mono", monospace;
+      font-size: 0.625rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.45rem;
+      border-radius: 0.35rem;
+      background: rgba(124, 108, 255, 0.12);
+      color: var(--accent2);
+    }
+    .stack { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .stack span {
+      font-size: 0.8125rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--txt2);
+    }
+    footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); font-size: 0.875rem; color: var(--txt2); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- TODO: point to your main portfolio -->
+    <a class="back" href="/">← Back to portfolio</a>
+
+    <p class="eyebrow">AI Lab</p>
+    <h1>Live agentic AI demos</h1>
+    <p class="lead">
+      Seventeen interactive demos from my RAG &amp; Agentic AI monorepo — PDF grounding,
+      SQL agents, CrewAI crews, vision, Whisper transcription, and more. Each demo streams
+      live from a FastAPI backend with Groq.
+    </p>
+
+    <div class="cta-row">
+      <!-- TODO: replace with your Vercel URL after deploy -->
+      <a class="btn btn-primary" id="live-hub" href="LIVE_HUB_URL">
+        Open live demos →
+      </a>
+      <a class="btn btn-ghost" href="GITHUB_REPO_URL" target="_blank" rel="noopener">
+        View source on GitHub
+      </a>
+    </div>
+
+    <section>
+      <h2>Featured demos</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>PDF QA Bot</h3>
+          <p>Upload a PDF and ask grounded questions with Chroma vector search.</p>
+          <div class="tags"><span class="tag">RAG</span><span class="tag">Chroma</span></div>
+        </article>
+        <article class="card">
+          <h3>Natural Language SQL</h3>
+          <p>Ask questions about the Chinook database in plain English.</p>
+          <div class="tags"><span class="tag">SQL</span><span class="tag">LangChain</span></div>
+        </article>
+        <article class="card">
+          <h3>AI Math Assistant</h3>
+          <p>Step-by-step math with tool use and LaTeX rendering.</p>
+          <div class="tags"><span class="tag">Agents</span><span class="tag">Tools</span></div>
+        </article>
+        <article class="card">
+          <h3>DocChat</h3>
+          <p>Multi-document RAG with hybrid retrieval over your files.</p>
+          <div class="tags"><span class="tag">RAG</span><span class="tag">Hybrid</span></div>
+        </article>
+        <article class="card">
+          <h3>Connoisseur Companion</h3>
+          <p>CrewAI food &amp; wine pairing with MCP tools.</p>
+          <div class="tags"><span class="tag">CrewAI</span><span class="tag">MCP</span></div>
+        </article>
+        <article class="card">
+          <h3>Meeting Assistant</h3>
+          <p>Whisper transcription → minutes, decisions, and action items.</p>
+          <div class="tags"><span class="tag">Whisper</span><span class="tag">Audio</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Stack</h2>
+      <div class="stack">
+        <span>FastAPI</span>
+        <span>Next.js</span>
+        <span>LangChain</span>
+        <span>LangGraph</span>
+        <span>CrewAI</span>
+        <span>Chroma</span>
+        <span>Groq</span>
+        <span>SSE streaming</span>
+      </div>
+    </section>
+
+    <footer>
+      Built by <a href="/">Aditya</a> ·
+      <a href="GITHUB_REPO_URL" target="_blank" rel="noopener">RAG-and-Agentic-AI</a>
+    </footer>
+  </div>
+
+  <script>
+    // --- Replace these before publishing ---
+    const LIVE_HUB_URL = "https://YOUR-VERCEL-APP.vercel.app";
+    const GITHUB_REPO_URL = "https://github.com/utdady/RAG-and-Agentic-AI";
+
+    document.getElementById("live-hub").href = LIVE_HUB_URL;
+    document.querySelectorAll('a[href="GITHUB_REPO_URL"]').forEach((el) => {
+      el.href = GITHUB_REPO_URL;
+    });
+    document.querySelectorAll('a[href="LIVE_HUB_URL"]').forEach((el) => {
+      el.href = LIVE_HUB_URL;
+    });
+  </script>
+</body>
+</html>

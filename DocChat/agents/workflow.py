@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, List, TypedDict
 
-from langchain.retrievers import EnsembleRetriever
+from langchain_classic.retrievers import EnsembleRetriever
 from langchain_core.documents import Document
 from langgraph.graph import END, StateGraph
 

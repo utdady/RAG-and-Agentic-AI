@@ -17,6 +17,9 @@ node_modules/
 out/
 dist/
 
+# Hub API uploads
+api/_uploads/
+
 # Vector DBs / local artifacts
 chroma_db/
 *.chroma/

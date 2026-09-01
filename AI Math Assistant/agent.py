@@ -28,9 +28,11 @@ def run_query(user_text: str, history_messages: list | None = None) -> tuple[str
 
     Returns (final_assistant_text, full_messages_list).
     """
+    from langchain_core.messages import HumanMessage
+
     agent, _ = get_math_agent()
     messages = list(history_messages or [])
-    messages.append(("human", user_text))
+    messages.append(HumanMessage(content=user_text))
     result = agent.invoke({"messages": messages})
     out_msgs = result.get("messages") or []
     final = ""

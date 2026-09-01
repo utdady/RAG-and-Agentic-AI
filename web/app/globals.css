@@ -1,0 +1,247 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+:root {
+  --bg: #0b0c10;
+  --bg2: #12141a;
+  --surface: #171a22;
+  --line: rgba(255, 255, 255, 0.08);
+  --txt: #eef1f6;
+  --txt2: #9aa3b5;
+  --accent: #00e5c3;
+  --accent2: #7c6cff;
+  --warn: #ff6b4a;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg2: var(--bg2);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-txt: var(--txt);
+  --color-txt2: var(--txt2);
+  --color-accent: var(--accent);
+  --color-accent2: var(--accent2);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) var(--bg2);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--bg2);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid var(--bg2);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 195, 0.45);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--bg2);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--txt);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.pixel-loader {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+
+.pixel-loader span {
+  background: var(--accent);
+  opacity: 0.15;
+  animation: pixelPulse 1.2s infinite;
+}
+
+.pixel-loader span:nth-child(1) { animation-delay: 0s; }
+.pixel-loader span:nth-child(2) { animation-delay: 0.1s; }
+.pixel-loader span:nth-child(3) { animation-delay: 0.2s; }
+.pixel-loader span:nth-child(4) { animation-delay: 0.3s; }
+.pixel-loader span:nth-child(5) { animation-delay: 0.15s; }
+.pixel-loader span:nth-child(6) { animation-delay: 0.25s; }
+.pixel-loader span:nth-child(7) { animation-delay: 0.35s; }
+.pixel-loader span:nth-child(8) { animation-delay: 0.45s; }
+.pixel-loader span:nth-child(9) { animation-delay: 0.3s; }
+.pixel-loader span:nth-child(10) { animation-delay: 0.4s; }
+.pixel-loader span:nth-child(11) { animation-delay: 0.5s; }
+.pixel-loader span:nth-child(12) { animation-delay: 0.6s; }
+.pixel-loader span:nth-child(13) { animation-delay: 0.45s; }
+.pixel-loader span:nth-child(14) { animation-delay: 0.55s; }
+.pixel-loader span:nth-child(15) { animation-delay: 0.65s; }
+.pixel-loader span:nth-child(16) { animation-delay: 0.75s; }
+
+@keyframes pixelPulse {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 1; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 229, 195, 0.18),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.thinking-dots span {
+  animation: thinkingDot 1.4s ease-in-out infinite;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes thinkingDot {
+  0%, 60%, 100% {
+    opacity: 0.15;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+@keyframes taskPulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.task-status-running {
+  animation: taskPulse 1.4s ease-in-out infinite;
+}
+
+.prose-stream {
+  line-height: 1.65;
+  font-size: 0.95rem;
+  color: var(--txt);
+}
+
+.prose-stream > :first-child {
+  margin-top: 0;
+}
+
+.prose-stream > :last-child {
+  margin-bottom: 0;
+}
+
+.prose-stream h1,
+.prose-stream h2,
+.prose-stream h3,
+.prose-stream h4 {
+  font-weight: 600;
+  color: var(--txt);
+  margin: 0.85em 0 0.4em;
+  line-height: 1.3;
+}
+
+.prose-stream h2 {
+  font-size: 1.15rem;
+}
+
+.prose-stream h3 {
+  font-size: 1.05rem;
+}
+
+.prose-stream p {
+  margin: 0.55em 0;
+}
+
+.prose-stream ul,
+.prose-stream ol {
+  margin: 0.55em 0;
+  padding-left: 1.25rem;
+}
+
+.prose-stream li {
+  margin: 0.25em 0;
+}
+
+.prose-stream li + li {
+  margin-top: 0.35em;
+}
+
+.prose-stream strong {
+  font-weight: 600;
+  color: var(--txt);
+}
+
+.prose-stream em {
+  font-style: italic;
+  color: var(--txt2);
+}
+
+.prose-stream a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-stream code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.88em;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+.prose-stream pre {
+  margin: 0.75em 0;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.prose-stream pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.prose-stream .katex {
+  color: var(--txt);
+  font-size: 1.05em;
+}
+
+.prose-stream .katex-display {
+  margin: 0.75em 0;
+  overflow-x: auto;
+}

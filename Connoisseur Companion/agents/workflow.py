@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +17,7 @@ if str(HERE.parent) not in sys.path:
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from rag.retrieve import search_knowledge
-from shared.llm import get_chat_llm
+from shared.llm import get_chat_llm, invoke_chat
 
 AGENT_PROMPTS = {
     "profile": (
@@ -48,8 +48,9 @@ AGENT_PROMPTS = {
 
 def _call_llm(system: str, user: str, temperature: float = 0.4) -> str:
     llm = get_chat_llm(temperature=temperature)
-    resp = llm.invoke(
-        [SystemMessage(content=system), HumanMessage(content=user)]
+    resp = invoke_chat(
+        llm,
+        [SystemMessage(content=system), HumanMessage(content=user)],
     )
     content = resp.content
     if isinstance(content, list):
@@ -59,19 +60,38 @@ def _call_llm(system: str, user: str, temperature: float = 0.4) -> str:
     return str(content)
 
 
+def _repair_json(text: str) -> str:
+    """Best-effort fixes for common LLM JSON mistakes."""
+    text = text.replace("\r\n", "\n")
+    text = re.sub(r",\s*}", "}", text)
+    text = re.sub(r",\s*]", "]", text)
+    return text
+
+
 def _parse_json(text: str) -> dict:
     text = text.strip()
     if text.startswith("```"):
         lines = text.splitlines()
         text = "\n".join(lines[1:-1] if lines[-1].startswith("```") else lines[1:])
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        start = text.find("{")
-        end = text.rfind("}")
-        if start >= 0 and end > start:
-            return json.loads(text[start : end + 1])
-        raise
+    candidates = [text.strip()]
+    start = text.find("{")
+    end = text.rfind("}")
+    if start >= 0 and end > start:
+        candidates.append(text[start : end + 1])
+    seen: set[str] = set()
+    last_exc: json.JSONDecodeError | None = None
+    for candidate in candidates:
+        for attempt in (candidate, _repair_json(candidate)):
+            if attempt in seen:
+                continue
+            seen.add(attempt)
+            try:
+                return json.loads(attempt)
+            except json.JSONDecodeError as exc:
+                last_exc = exc
+    if last_exc is not None:
+        raise last_exc
+    raise json.JSONDecodeError("No JSON object found", text, 0)
 
 
 def generate_profile(user_input: str) -> dict:
@@ -114,13 +134,9 @@ def run_recommendation_workflow(user_input: str) -> dict:
         "retrieved_recipes": candidates.get("recipes", [])[:10],
     }
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        fut_trends = pool.submit(_analyze, "trends", analysis_payload)
-        fut_styles = pool.submit(_analyze, "styles", analysis_payload)
-        fut_nutrition = pool.submit(_analyze, "nutrition", analysis_payload)
-        trends = fut_trends.result()
-        styles = fut_styles.result()
-        nutrition = fut_nutrition.result()
+    trends = _analyze("trends", analysis_payload)
+    styles = _analyze("styles", analysis_payload)
+    nutrition = _analyze("nutrition", analysis_payload)
 
     synthesis_payload = {
         **analysis_payload,
@@ -142,21 +158,26 @@ def run_recommendation_workflow(user_input: str) -> dict:
 
 def format_recommendations(result: dict) -> str:
     recs = result.get("recommendations") or {}
-    lines = ["## Recommendations\n"]
+    lines = ["## Recommendations", ""]
+
+    profile = result.get("profile") or {}
+    if profile.get("summary"):
+        lines.append(f"_Profile: {profile['summary']}_")
+        lines.append("")
 
     for r in recs.get("restaurants") or []:
         lines.append(
             f"**{r.get('name', 'Restaurant')}** ({r.get('location', 'CA')}) — "
             f"{r.get('cuisine', 'N/A')}. {r.get('reason', '')}"
         )
+        lines.append("")
 
     if recs.get("recipes"):
-        lines.append("\n### Recipes\n")
+        lines.append("### Recipes")
+        lines.append("")
         for r in recs["recipes"]:
-            lines.append(f"- **{r.get('name')}** ({r.get('cuisine')}): {r.get('reason', '')}")
+            lines.append(
+                f"- **{r.get('name')}** ({r.get('cuisine')}): {r.get('reason', '')}"
+            )
 
-    profile = result.get("profile") or {}
-    if profile.get("summary"):
-        lines.insert(1, f"_Profile: {profile['summary']}_\n")
-
-    return "\n".join(lines)
+    return "\n".join(lines).rstrip() + "\n"

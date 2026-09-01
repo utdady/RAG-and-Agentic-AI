@@ -14,7 +14,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import config
-from shared.llm import resolve_provider
+from helpers import has_items_section, strip_model_thinking
+from shared.llm import (
+    DEFAULT_GROQ_VISION_MODEL,
+    resolve_groq_vision_model,
+    resolve_provider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +37,14 @@ class VisionFashionService:
             api_key = os.getenv("GROQ_API_KEY", "").strip()
             if not api_key:
                 raise RuntimeError("GROQ_API_KEY required for Groq vision.")
-            model = config.GROQ_VISION_MODEL
+            model = resolve_groq_vision_model()
+            lower = model.lower()
+            if (
+                "llama-4-scout" in lower
+                or "vision-preview" in lower
+                or "llava-v1.5" in lower
+            ):
+                model = DEFAULT_GROQ_VISION_MODEL
             return ChatGroq(
                 model=model, temperature=self.temperature, api_key=api_key
             ), f"groq:{model}"
@@ -57,6 +69,7 @@ class VisionFashionService:
             )
             out = self.llm.invoke([msg])
             content = getattr(out, "content", str(out))
+            content = strip_model_thinking(content)
             logger.info("Vision LLM response_len=%d", len(content))
             return content
         except Exception as e:
@@ -71,50 +84,29 @@ class VisionFashionService:
         similarity_score: float,
         threshold: float = 0.8,
     ) -> str:
-        items_list = []
-        for _, row in all_items.iterrows():
-            name = row.get("Item Name", "Item")
-            price = row.get("Price", "?")
-            link = row.get("Link", "")
-            items_list.append(f"{name} (${price}): {link}")
-        items_description = "\n".join(f"- {item}" for item in items_list)
-
-        if similarity_score >= threshold:
-            assistant_prompt = (
-                "You're conducting a professional retail catalog analysis. "
-                "This image shows standard clothing items available in department stores. "
-                "Focus exclusively on professional fashion analysis for a clothing retailer. "
-                f"ITEM DETAILS (always include this section in your response):\n{items_description}\n\n"
-                "Please:\n"
-                "1. Identify and describe the clothing items objectively (colors, patterns, materials)\n"
-                "2. Categorize the overall style (business, casual, etc.)\n"
-                "3. Include the ITEM DETAILS section at the end\n\n"
-                "This is for a professional retail catalog. Use formal, clinical language."
-            )
-        else:
-            assistant_prompt = (
-                "You're conducting a professional retail catalog analysis. "
-                "This image shows standard clothing items available in department stores. "
-                "Focus exclusively on professional fashion analysis for a clothing retailer. "
-                f"SIMILAR ITEMS (always include this section in your response):\n{items_description}\n\n"
-                "Please:\n"
-                "1. Note these are similar but not exact items\n"
-                "2. Identify clothing elements objectively (colors, patterns, materials)\n"
-                "3. Include the SIMILAR ITEMS section at the end\n\n"
-                "This is for a professional retail catalog. Use formal, clinical language."
-            )
+        match_note = (
+            "The closest catalog match is a strong visual match."
+            if similarity_score >= threshold
+            else "The closest catalog match is only loosely similar — focus on what you see in the photo."
+        )
+        assistant_prompt = (
+            "You are writing a professional retail catalog analysis of the clothing in this image.\n\n"
+            f"{match_note}\n\n"
+            "Describe objectively:\n"
+            "1. Garment types, colors, patterns, and materials\n"
+            "2. Overall style category (e.g. business, casual, athleisure)\n"
+            "3. Fit and construction details you can see\n\n"
+            "Use formal, clinical language. Do not include product links, prices, or catalog listings — "
+            "those are shown separately. Output only the final analysis with no reasoning or thinking tags."
+        )
 
         response = self.generate_response(user_image_base64, assistant_prompt)
 
-        if len(response) < 100:
-            header = "ITEM DETAILS:" if similarity_score >= threshold else "SIMILAR ITEMS:"
+        if len(response) < 100 and not has_items_section(response):
             response = (
-                "# Fashion Analysis\n\n"
-                "This outfit features a collection of carefully coordinated pieces.\n\n"
-                f"{header}\n{items_description}"
+                "## Fashion Analysis\n\n"
+                "This outfit features coordinated pieces suitable for everyday wear. "
+                "See the catalog match below for related items."
             )
-        elif "ITEM DETAILS:" not in response and "SIMILAR ITEMS:" not in response:
-            header = "ITEM DETAILS:" if similarity_score >= threshold else "SIMILAR ITEMS:"
-            response += f"\n\n{header}\n{items_description}"
 
         return response

@@ -10,6 +10,7 @@ from shared.llm import (
     DEFAULT_GROQ_MODEL,
     detect_hardware_tier,
     pick_ollama_model,
+    resolve_groq_model,
     resolve_provider,
 )
 
@@ -32,7 +33,7 @@ def get_llama_index_llm(temperature: float = 0.3):
             )
         from llama_index.llms.groq import Groq
 
-        model = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL
+        model = resolve_groq_model()
         return Groq(model=model, api_key=api_key, temperature=temperature)
 
     from llama_index.llms.ollama import Ollama
@@ -45,7 +46,7 @@ def describe_llama_index_llm() -> str:
     provider = resolve_provider()
     tier = detect_hardware_tier()
     if provider == "groq":
-        model = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL
+        model = resolve_groq_model()
     else:
         model = pick_ollama_model(tier)
     return f"LlamaIndex LLM={provider}:{model} (tier={tier})"

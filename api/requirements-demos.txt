@@ -1,0 +1,61 @@
+# Hub runtime: install alongside api/requirements.txt for all 17 live demos.
+#   pip install -r api/requirements.txt -r api/requirements-demos.txt
+#
+# Individual sub-projects may pin older versions; this file targets one shared venv.
+
+# Shared LLM + embeddings (LangChain 1.x stack)
+langchain>=1.0
+langchain-core>=1.4.7,<2
+langchain-community>=0.4.2
+langchain-groq>=1.0
+langchain-huggingface>=1.0
+langchain-ollama>=0.2.0
+langchain-experimental>=0.4.0
+langchain-classic>=1.0.8
+langchain-text-splitters>=1.1.2
+langgraph>=1.0
+sentence-transformers>=3.0.0
+faiss-cpu>=1.8.0
+youtube-transcript-api>=1.0.0
+
+# Vector / RAG
+chromadb>=0.5.0,<1.2
+langchain-chroma>=0.2.0
+rank-bm25>=0.2.2
+pypdf>=4.0.0
+docx2txt>=0.8
+
+# LlamaIndex (Icebreaker)
+llama-index>=0.12.0,<0.13
+llama-index-embeddings-huggingface>=0.5.0
+llama-index-llms-groq>=0.3.0
+llama-index-llms-ollama>=0.5.0
+
+# Agents / crews
+crewai>=0.80.0
+crewai-tools>=0.38.0
+litellm>=1.0.0
+ag2[openai]>=0.8,<1
+
+# MCP (Connoisseur)
+fastmcp>=2.12.0
+
+# Data / viz / vision
+pandas>=2.0.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+scikit-learn>=1.3.0
+torch>=2.0.0
+torchvision>=0.15.0
+Pillow>=10.0.0
+transformers>=4.37.0
+tabulate>=0.9.0
+
+# Web UIs used by adapters (Gradio/Flask apps import at module load)
+gradio>=4.44.0,<6
+flask>=3.0.0
+wikipedia>=1.4.0
+sqlalchemy>=2.0.0
+python-dotenv>=1.0.0
+psutil>=5.9.0
+requests>=2.31.0

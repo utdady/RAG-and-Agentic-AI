@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -91,6 +92,18 @@ def _capture_figures() -> list[Image.Image]:
     return images
 
 
+def reset_caches() -> None:
+    """Clear cached agent/dataframe (call after hub reloads this module)."""
+    get_agent.cache_clear()
+    load_dataframe.cache_clear()
+
+
+def _format_code_snippet(code: str) -> str:
+    normalized = str(code).replace("; ", "\n")
+    normalized = re.sub(r"(\bimport\s+\S+)\s+(?=\w)", r"\1\n", normalized)
+    return f"```python\n{normalized.strip()}\n```"
+
+
 def _code_snippets(response: dict) -> str:
     steps = response.get("intermediate_steps") or []
     snippets: list[str] = []
@@ -101,12 +114,12 @@ def _code_snippets(response: dict) -> str:
             if isinstance(code, dict):
                 code = code.get("query") or code.get("code") or str(code)
             if code:
-                snippets.append(str(code).replace("; ", "\n"))
+                snippets.append(_format_code_snippet(code))
         except Exception:
             continue
     if not snippets:
         return ""
-    return "\n\n--- generated code ---\n" + "\n\n".join(snippets[-3:])
+    return "\n\n### Generated code\n\n" + "\n\n".join(snippets[-3:])
 
 
 def run_query(question: str) -> tuple[str, list[Image.Image]]:

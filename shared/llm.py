@@ -8,10 +8,13 @@ Override with LLM_PROVIDER=groq|ollama|auto
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
+import time
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Any
 
 # Conservative picks: prefer models that actually run over leaderboard winners.
 OLLAMA_BY_TIER = {
@@ -33,7 +36,43 @@ OLLAMA_CANDIDATES = {
     "high": ("llama3.1:8b", "llama3.1", "llama3.2", "mistral:7b", "llama3.2:3b"),
 }
 
-DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
+DEFAULT_GROQ_VISION_MODEL = "qwen/qwen3.6-27b"
+
+# Groq retires ids over time; map old env values to current replacements.
+GROQ_MODEL_ALIASES: dict[str, str] = {
+    "llama-3.1-8b-instant": "openai/gpt-oss-20b",
+    "llama-3.3-70b-versatile": "openai/gpt-oss-120b",
+    "llama3-8b-8192": "openai/gpt-oss-20b",
+    "llama3-70b-8192": "openai/gpt-oss-120b",
+    "mixtral-8x7b-32768": "openai/gpt-oss-120b",
+}
+
+GROQ_VISION_MODEL_ALIASES: dict[str, str] = {
+    "meta-llama/llama-4-scout-17b-16e-instruct": DEFAULT_GROQ_VISION_MODEL,
+    "llama-3.2-11b-vision-preview": DEFAULT_GROQ_VISION_MODEL,
+    "llama-3.2-90b-vision-preview": DEFAULT_GROQ_VISION_MODEL,
+    "llava-v1.5-7b-4096-preview": DEFAULT_GROQ_VISION_MODEL,
+}
+
+
+def resolve_groq_model() -> str:
+    raw = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL
+    return GROQ_MODEL_ALIASES.get(raw, raw)
+
+
+def resolve_groq_vision_model() -> str:
+    raw = (
+        os.getenv("GROQ_VISION_MODEL", DEFAULT_GROQ_VISION_MODEL).strip().strip("\"'")
+        or DEFAULT_GROQ_VISION_MODEL
+    )
+    mapped = GROQ_VISION_MODEL_ALIASES.get(raw)
+    if mapped:
+        return mapped
+    lower = raw.lower()
+    if "llama-4-scout" in lower or "vision-preview" in lower or "llava-v1.5" in lower:
+        return DEFAULT_GROQ_VISION_MODEL
+    return raw
 
 
 @dataclass(frozen=True)
@@ -176,7 +215,7 @@ def get_chat_llm(temperature: float = 0.5):
             )
         from langchain_groq import ChatGroq
 
-        model = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL
+        model = resolve_groq_model()
         return ChatGroq(model=model, temperature=temperature, api_key=api_key)
 
     from langchain_ollama import ChatOllama
@@ -190,11 +229,40 @@ def get_llm_info(temperature: float = 0.5) -> tuple[object, LLMInfo]:
     provider = resolve_provider()
     tier = detect_hardware_tier()
     if provider == "groq":
-        model = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL
+        model = resolve_groq_model()
     else:
         model = pick_ollama_model(tier)
     llm = get_chat_llm(temperature=temperature)
     return llm, LLMInfo(provider=provider, model=model, tier=tier)
+
+
+def _rate_limit_wait_seconds(exc: BaseException, attempt: int) -> float:
+    msg = str(exc)
+    match = re.search(r"try again in (\d+(?:\.\d+)?)\s*s", msg, re.I)
+    if match:
+        return float(match.group(1)) + 0.5
+    return min(30.0, 2.0 * (attempt + 1))
+
+
+def _is_rate_limit_error(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return "429" in msg or "rate limit" in msg or "rate_limit" in msg
+
+
+def invoke_chat(llm: Any, messages: list[Any], *, max_retries: int = 6) -> Any:
+    """Invoke a chat model with Groq/Ollama rate-limit backoff."""
+    last_exc: BaseException | None = None
+    for attempt in range(max_retries):
+        try:
+            return llm.invoke(messages)
+        except Exception as exc:
+            last_exc = exc
+            if not _is_rate_limit_error(exc) or attempt >= max_retries - 1:
+                raise
+            time.sleep(_rate_limit_wait_seconds(exc, attempt))
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("invoke_chat failed without an exception")
 
 
 def describe_setup() -> str:
@@ -202,7 +270,7 @@ def describe_setup() -> str:
     provider = resolve_provider()
     tier = detect_hardware_tier()
     if provider == "groq":
-        model = os.getenv("GROQ_MODEL", DEFAULT_GROQ_MODEL).strip() or DEFAULT_GROQ_MODEL
+        model = resolve_groq_model()
     else:
         model = pick_ollama_model(tier)
     whisper = resolve_whisper_model()

@@ -1,0 +1,30 @@
+.git
+.gitignore
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.md
+!api/README.md
+
+# Frontend (not needed in API image)
+web/node_modules
+web/.next
+
+# Local secrets and uploads
+.env
+.env.*
+api/_uploads
+
+# Large generated / cache data
+DocChat/data
+**/.chroma
+**/chroma.sqlite3
+**/*.pkl
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db

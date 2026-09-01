@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from shared.llm import resolve_groq_vision_model
+
 HERE = Path(__file__).resolve().parent
 
 IMAGE_SIZE = (224, 224)
@@ -21,8 +23,6 @@ EMBEDDINGS_URL = (
     "95eJ0YJVtqTZhEd7RaUlew/processed-swift-style-with-embeddings.pkl"
 )
 
-# Vision model overrides (repo-root .env)
-GROQ_VISION_MODEL = os.getenv(
-    "GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct"
-).strip()
+# Vision model overrides (repo-root .env) — deprecated Groq ids are aliased in shared/llm.py
+GROQ_VISION_MODEL = resolve_groq_vision_model()
 OLLAMA_VISION_MODEL = os.getenv("OLLAMA_VISION_MODEL", "llava").strip() or "llava"
