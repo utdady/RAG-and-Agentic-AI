@@ -1,12 +1,21 @@
 # Deploying the AI Lab
 
-Split deployment: **Next.js on Vercel** + **FastAPI on Railway** (or Render/Fly).
+**Recommended:** **Oracle Cloud Always Free** (API) + **Vercel** (UI) + **GitHub Pages** (portfolio).
+
+| Piece | Host | Cost |
+|-------|------|------|
+| API (`api/`) | Oracle Ampere A1 VM + Docker | $0/mo |
+| UI (`web/`) | Vercel | $0/mo |
+| Landing page | `utdady.github.io/ai-lab.html` | $0/mo |
+
+**Full Oracle walkthrough:** [`docs/deploy/oracle.md`](docs/deploy/oracle.md)
 
 ```
-Portfolio (GitHub Pages)          Vercel (web/)              Railway (api/)
-utdady.github.io/ai-lab.html  →   lab.yourdomain.com    →    api.yourdomain.com
-     "Try live demos" link            demo hub UI               17 SSE demos
+Portfolio              Vercel (web/)              Oracle VM
+utdady.github.io  →    lab.vercel.app        →    https://api.yourdomain.com
 ```
+
+---
 
 ## 0. Preflight (local)
 
@@ -17,158 +26,81 @@ pip install -r api/requirements.txt -r api/requirements-demos.txt
 python -m api.diagnostics.preflight --probe
 ```
 
-Fix any failing imports before paying for hosting.
-
 ---
 
-## 1. API on Railway
+## 1. API on Oracle Cloud (recommended)
 
-### Create the service
+See **[`docs/deploy/oracle.md`](docs/deploy/oracle.md)** for the full step-by-step.
 
-1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → this repo.
-2. Railway reads `railway.toml` and builds `api/Dockerfile` (first build may take ~10–15 min — torch + embeddings are heavy).
-3. After deploy, open **Settings → Networking → Generate Domain** (e.g. `ai-lab-api-production.up.railway.app`).
+**Short version:**
 
-### Required env vars (Railway → Variables)
+1. Create **Ampere A1** Ubuntu VM (2 OCPU / 12 GB RAM).
+2. Open ports **22, 80, 443** in OCI security list.
+3. SSH in → `bash scripts/oracle/setup-vm.sh`
+4. Set `GROQ_API_KEY` in `.env` → `bash scripts/oracle/deploy-api.sh`
+5. Put **nginx + certbot** (or Cloudflare Tunnel) in front for **HTTPS**.
+6. `curl https://your-api-domain/health` → `"ok": true`
 
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `GROQ_API_KEY` | `gsk_…` | From [console.groq.com](https://console.groq.com/keys) |
-| `LLM_PROVIDER` | `groq` | Default in Docker image; set explicitly |
-| `PORT` | *(auto)* | Railway injects this; Dockerfile uses it |
-
-### Optional env vars
-
-| Variable | When needed |
-|----------|-------------|
-| `SERPER_API_KEY` | CrewAI web-search demos |
-| `TAVILY_API_KEY` | LangGraph search demos |
-| `GOOGLE_API_KEY` | Gradio image demos |
-| `GROQ_MODEL` | Override default chat model |
-| `GROQ_VISION_MODEL` | Override vision model |
-| `WHISPER_MODEL` | Default: `openai/whisper-tiny.en` |
-| `CORS_ORIGINS` | Comma list if you tighten CORS later |
-
-### Verify
-
-```powershell
-curl https://YOUR-RAILWAY-DOMAIN/health
-```
-
-Expect: `{"ok":true,"groq":true,"demos":17,...}`
-
-### Docker smoke (optional, before Railway)
-
-```powershell
-docker build -f api/Dockerfile -t ai-lab-api .
-docker run --env-file .env -p 8080:8080 ai-lab-api
-curl http://127.0.0.1:8080/health
-```
+Files: `docker-compose.yml`, `scripts/oracle/*`, `api/Dockerfile`
 
 ---
 
 ## 2. UI on Vercel
 
-### Create the project
+1. [vercel.com](https://vercel.com) → import repo → **Root Directory:** `web`
+2. Environment variables:
 
-1. [vercel.com](https://vercel.com) → **Add New Project** → import this repo.
-2. **Root Directory:** `web`
-3. Framework preset: **Next.js** (auto-detected via `web/vercel.json`).
+| Variable | Value |
+|----------|-------|
+| `NEXT_PUBLIC_API_URL` | `https://your-api-domain` (must be HTTPS) |
+| `NEXT_PUBLIC_PORTFOLIO_URL` | `https://utdady.github.io` |
 
-### Required env vars (Vercel → Settings → Environment Variables)
+3. Deploy → test **Math Assistant** on the live URL.
 
-| Variable | Value | Environments |
-|----------|-------|--------------|
-| `NEXT_PUBLIC_API_URL` | `https://YOUR-RAILWAY-DOMAIN` | Production, Preview |
-
-**Important:** Point the browser **directly** at the API URL. Do not rely on the Vercel `/api/hub` proxy for demo runs — SSE streams can exceed serverless timeouts.
-
-### Optional env vars
-
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| `NEXT_PUBLIC_PORTFOLIO_URL` | `https://utdady.github.io` | “Portfolio” link in hub sidebar |
-| `API_PROXY_URL` | Same Railway URL | Only if you use `/api/hub` server proxy for health checks |
-
-### Custom domain (recommended)
-
-Vercel → **Domains** → add e.g. `lab.utdady.dev`.
-
-### Verify
-
-1. Open your Vercel URL → hub home loads.
-2. Open a demo (e.g. **Math Assistant**) → streaming answer appears.
-3. No yellow “API offline” banner.
+Point the browser **directly** at the API URL (not the Vercel `/api/hub` proxy) for SSE demos.
 
 ---
 
-## 3. Portfolio (GitHub Pages)
+## 3. Portfolio
 
-Copy `docs/portfolio/ai-lab.html` into your portfolio repo (e.g. `utdady.github.io/ai-lab.html`).
-
-Edit the template placeholders:
-
-- `LIVE_HUB_URL` → your Vercel URL (or custom domain)
-- `GITHUB_REPO_URL` → already set to this monorepo
-
-Add a nav link on your main portfolio page:
-
-```html
-<a href="/ai-lab.html">AI Lab</a>
-```
-
-The hub shows a **Portfolio** link when `NEXT_PUBLIC_PORTFOLIO_URL` is set (defaults to `https://utdady.github.io`).
+Copy `docs/portfolio/ai-lab.html` to your portfolio repo. Set `LIVE_HUB_URL` to your Vercel URL.
 
 ---
 
 ## 4. Env var cheat sheet
 
-### Production only
-
 | Where | Variable | Example |
 |-------|----------|---------|
-| Railway | `GROQ_API_KEY` | `gsk_…` |
-| Railway | `LLM_PROVIDER` | `groq` |
-| Vercel | `NEXT_PUBLIC_API_URL` | `https://ai-lab-api-production.up.railway.app` |
+| Oracle VM `.env` | `GROQ_API_KEY` | `gsk_…` |
+| Oracle VM `.env` | `LLM_PROVIDER` | `groq` |
+| Vercel | `NEXT_PUBLIC_API_URL` | `https://api.lab.yourdomain.com` |
 | Vercel | `NEXT_PUBLIC_PORTFOLIO_URL` | `https://utdady.github.io` |
-
-### Local dev (unchanged)
-
-```powershell
-.\scripts\start_lab.ps1
-```
-
-No `NEXT_PUBLIC_API_URL` needed locally — browser uses `/api/hub` → `localhost:8080`.
 
 ---
 
-## 5. Cost & abuse notes
+## 5. Alternative: Railway / Render
 
-- Public demos call **your Groq key** on every run. Monitor usage at Groq console.
-- First request after cold start may be slow (embedding model load, Chroma init).
-- Consider highlighting 5–8 demos on the portfolio page even though all 17 are in the hub.
-- Later hardening: rate limits, API key gateway, or demo-only model caps.
+`railway.toml` and `api/Dockerfile` also work on Railway or Render if you prefer managed hosting (~$7–25/mo). Oracle is cheaper for an always-on portfolio API.
 
 ---
 
 ## 6. Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| “API offline” on Vercel | `NEXT_PUBLIC_API_URL` missing/wrong | Set env var, redeploy |
-| CORS error in browser console | API URL typo or http vs https | Use `https://` Railway URL |
-| 502 on `/api/hub` only | `API_PROXY_URL` not set on Vercel | Set it, or use `NEXT_PUBLIC_API_URL` |
-| Build fails on Railway | OOM during pip install | Upgrade Railway plan or use CPU-only torch |
-| `groq: false` in `/health` | `GROQ_API_KEY` not set on Railway | Add secret, redeploy |
-| Demo times out | Cold start + slow demo | Retry; check Railway logs |
+| Symptom | Fix |
+|---------|-----|
+| “API offline” on Vercel | Wrong/missing `NEXT_PUBLIC_API_URL`; redeploy Vercel |
+| Mixed content / CORS | API must be **https://** |
+| `groq: false` in `/health` | Fix `GROQ_API_KEY` in VM `.env`, recreate container |
+| Docker build OOM on Oracle | Use 12 GB RAM shape or add swap |
+| Demo times out | First run loads models — retry; check `docker compose logs` |
 
 ---
 
-## Quick deploy checklist
+## Quick checklist
 
 - [ ] `preflight --probe` passes locally
-- [ ] Railway service live, `/health` returns `ok: true`
+- [ ] Oracle VM: local `/health` OK
+- [ ] Public HTTPS `/health` OK
 - [ ] Vercel deployed with `NEXT_PUBLIC_API_URL`
-- [ ] One chat demo + one file demo tested in production
-- [ ] `ai-lab.html` on portfolio with live hub link
-- [ ] Portfolio link works from hub sidebar
+- [ ] Chat + file demo tested live
+- [ ] Portfolio `ai-lab.html` published

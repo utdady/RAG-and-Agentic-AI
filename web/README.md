@@ -16,6 +16,6 @@ npm run dev:hub
 
 Local dev uses the same-origin proxy at `/api/hub` — you do **not** need `NEXT_PUBLIC_API_URL` unless overriding production behavior.
 
-Vercel: set **Root Directory** to `web`. Add `NEXT_PUBLIC_API_URL` pointing at the deployed API (Railway). See [`../DEPLOY.md`](../DEPLOY.md).
+Vercel: set **Root Directory** to `web`. Add `NEXT_PUBLIC_API_URL` pointing at your HTTPS API (Oracle VM). See [`../DEPLOY.md`](../DEPLOY.md) and [`../docs/deploy/oracle.md`](../docs/deploy/oracle.md).
 
 Components: pixel loading state, thinking traces, task rows, tool chips, context cards, streaming text, prompt bar — mapped from the hub SSE contract in `../api/events.py`.

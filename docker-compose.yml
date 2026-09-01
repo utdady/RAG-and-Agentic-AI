@@ -1,0 +1,27 @@
+# Run on the Oracle VM (or any Docker host) from repo root:
+#   cp env.example .env   # then add GROQ_API_KEY
+#   docker compose up -d --build
+#
+# API listens on 127.0.0.1:8080 — put nginx in front for HTTPS (see docs/deploy/oracle.md).
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s

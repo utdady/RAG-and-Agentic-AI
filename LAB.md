@@ -29,6 +29,4 @@ npm run dev:hub
 
 Hub: http://localhost:3000 — API calls go through `/api/hub` (proxied to :8080).
 
-**Deploy:** see [`DEPLOY.md`](DEPLOY.md) (Vercel + Railway checklist).
-
-Portfolio landing page template: [`docs/portfolio/ai-lab.html`](docs/portfolio/ai-lab.html) → copy to `utdady.github.io/ai-lab.html`.
+**Deploy:** see [`DEPLOY.md`](DEPLOY.md) — **Oracle Cloud (free)** + Vercel. Step-by-step: [`docs/deploy/oracle.md`](docs/deploy/oracle.md).

@@ -19,7 +19,7 @@ Production secrets: `GROQ_API_KEY`, `LLM_PROVIDER=groq`. Optional: `SERPER_API_K
 
 CORS is open for the Vercel hub and portfolio. Set `CORS_ORIGINS` to tighten later.
 
-**Production deploy:** see [`../DEPLOY.md`](../DEPLOY.md) (Railway + Vercel).
+**Production deploy:** see [`../DEPLOY.md`](../DEPLOY.md) — Oracle Cloud (free) or Railway. Oracle guide: [`../docs/deploy/oracle.md`](../docs/deploy/oracle.md).
 
 PYTHONPATH must include the repo root so `shared/` and app folders import correctly (uvicorn from repo root does this via `api.bootstrap`).
 

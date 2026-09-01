@@ -17,4 +17,4 @@ utdady.github.io/ai-lab.html
 
 3. On Vercel, set `NEXT_PUBLIC_PORTFOLIO_URL=https://utdady.github.io` so the live hub links back.
 
-Full deploy steps: [`../../DEPLOY.md`](../../DEPLOY.md).
+Full deploy steps: [`../../DEPLOY.md`](../../DEPLOY.md). API hosting: [`../../docs/deploy/oracle.md`](../../docs/deploy/oracle.md).
