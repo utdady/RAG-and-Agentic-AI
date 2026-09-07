@@ -78,9 +78,17 @@ Copy `docs/portfolio/ai-lab.html` to your portfolio repo. Set `LIVE_HUB_URL` to 
 
 ---
 
-## 5. Alternative: Railway / Render
+## 5. Alternative: Render (while Oracle is pending)
 
-`railway.toml` and `api/Dockerfile` also work on Railway or Render if you prefer managed hosting (~$7–25/mo). Oracle is cheaper for an always-on portfolio API.
+1. [render.com](https://render.com) → **New → Web Service** → this GitHub repo.
+2. Runtime: **Docker**. Dockerfile path: `api/Dockerfile`. Build context: repo root (`.`).
+3. Health check: `/health`. Leave Docker Command blank.
+4. Env: `GROQ_API_KEY`, `LLM_PROVIDER=groq`.
+5. Prefer **Starter** over free if the free build OOMs.
+
+First build can take 15–30 minutes (CPU torch + deps). If logs loop on `huggingface-hub … does not provide the extra 'inference'` with endless `ag2-0.x` downloads, cancel — that was the old loose `ag2` pin (fixed on `main`).
+
+`railway.toml` still works for Railway if you prefer that (~$5 trial / paid after).
 
 ---
 
