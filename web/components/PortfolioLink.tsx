@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { PORTFOLIO_URL } from "@/lib/site";
 
 export function PortfolioLink({
@@ -9,7 +8,7 @@ export function PortfolioLink({
   onNavigate?: () => void;
 }) {
   return (
-    <Link
+    <a
       href={PORTFOLIO_URL}
       onClick={onNavigate}
       className={
@@ -18,6 +17,6 @@ export function PortfolioLink({
       }
     >
       ← Portfolio
-    </Link>
+    </a>
   );
 }
