@@ -53,7 +53,7 @@ Files: `docker-compose.yml`, `scripts/oracle/*`, `api/Dockerfile`
 | Variable | Value |
 |----------|-------|
 | `NEXT_PUBLIC_API_URL` | `https://your-api-domain` (must be HTTPS) |
-| `NEXT_PUBLIC_PORTFOLIO_URL` | `https://utdady.github.io` |
+| `NEXT_PUBLIC_PORTFOLIO_URL` | `https://aditya-bhaskar.vercel.app` |
 
 3. Deploy → test **Math Assistant** on the live URL.
 
@@ -74,7 +74,7 @@ Copy `docs/portfolio/ai-lab.html` to your portfolio repo. Set `LIVE_HUB_URL` to 
 | Oracle VM `.env` | `GROQ_API_KEY` | `gsk_…` |
 | Oracle VM `.env` | `LLM_PROVIDER` | `groq` |
 | Vercel | `NEXT_PUBLIC_API_URL` | `https://api.lab.yourdomain.com` |
-| Vercel | `NEXT_PUBLIC_PORTFOLIO_URL` | `https://utdady.github.io` |
+| Vercel | `NEXT_PUBLIC_PORTFOLIO_URL` | `https://aditya-bhaskar.vercel.app` |
 
 ---
 

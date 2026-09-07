@@ -1,20 +1,15 @@
 # Portfolio page for AI Lab
 
-Copy `ai-lab.html` into your GitHub Pages portfolio repo:
+Copy `ai-lab.html` into this portfolio repo (or keep the styled version already here) and deploy so it is reachable at:
 
 ```
-utdady.github.io/ai-lab.html
+https://aditya-bhaskar.vercel.app/ai-lab
 ```
 
 ## Before publishing
 
-1. Replace `LIVE_HUB_URL` in the HTML with your Vercel URL (or custom domain like `https://lab.utdady.dev`).
-2. Add a nav link on your main portfolio page:
-
-```html
-<a href="/ai-lab.html">AI Lab</a>
-```
-
-3. On Vercel, set `NEXT_PUBLIC_PORTFOLIO_URL=https://utdady.github.io` so the live hub links back.
+1. Set `AI_LAB_HUB` in `ai-lab.html` to your live hub (`https://rag-and-agentic-ai.vercel.app`).
+2. Keep the nav / Projects / About links to `ai-lab.html` on `index.html`.
+3. On the hub Vercel project, set `NEXT_PUBLIC_PORTFOLIO_URL=https://aditya-bhaskar.vercel.app` so “← Portfolio” links back.
 
 Full deploy steps: [`../../DEPLOY.md`](../../DEPLOY.md). API hosting: [`../../docs/deploy/oracle.md`](../../docs/deploy/oracle.md).
