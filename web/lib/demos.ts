@@ -20,7 +20,19 @@ export type Demo = {
   github: string;
   tags: string[];
   placeholder?: string;
+  /** Homepage featured strip — omit from category grids when set. */
+  featured?: {
+    blurb: string;
+    tags?: string[];
+  };
 };
+
+/** Featured hub cards, in display order. */
+export const FEATURED_SLUGS = [
+  "sql-agent",
+  "docchat",
+  "meal-planner",
+] as const;
 
 export const GITHUB_BASE =
   "https://github.com/utdady/RAG-and-Agentic-AI/tree/main";
@@ -59,6 +71,11 @@ export const DEMOS: Demo[] = [
     github: "Natural%20Language%20SQL%20Agent",
     tags: ["SQL", "LangChain"],
     placeholder: "How many albums are in the database?",
+    featured: {
+      blurb:
+        "Ask Chinook SQLite questions in plain English — agent writes, runs, and self-corrects SQL.",
+      tags: ["LangGraph", "Text-to-SQL", "Groq"],
+    },
   },
   {
     slug: "math-assistant",
@@ -127,6 +144,11 @@ export const DEMOS: Demo[] = [
     github: "DocChat",
     tags: ["LangGraph", "RAG"],
     placeholder: "Ask a question about the uploaded files…",
+    featured: {
+      blurb:
+        "Relevance-check → research → verify pipeline over your own documents, not a single-shot answer.",
+      tags: ["Agentic RAG", "Chroma", "Self-verify"],
+    },
   },
   {
     slug: "food-search",
@@ -277,6 +299,11 @@ export const DEMOS: Demo[] = [
     kind: "form",
     github: "Meal%20Grocery%20Planner",
     tags: ["CrewAI"],
+    featured: {
+      blurb:
+        "Three-agent CrewAI workflow: plan a week of meals, build the shopping list, and stay in budget.",
+      tags: ["CrewAI", "Multi-agent", "Tool use"],
+    },
   },
   {
     slug: "healthcare",
@@ -355,4 +382,8 @@ export const DEMO_GROUPS: DemoGroup[] = [
 
 export function demoBySlug(slug: string) {
   return DEMOS.find((d) => d.slug === slug);
+}
+
+export function isFeaturedSlug(slug: string) {
+  return (FEATURED_SLUGS as readonly string[]).includes(slug);
 }
