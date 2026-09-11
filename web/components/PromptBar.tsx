@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent, ReactNode, RefObject } from "react";
+import { useEffect, useRef, type FormEvent, type ReactNode, type RefObject } from "react";
 
 function AttachIcon() {
   return (
@@ -37,6 +37,8 @@ export function PromptBar({
   extra,
   attachment,
   canSubmit,
+  draft,
+  draftNonce = 0,
   onSubmit,
   onStop,
 }: {
@@ -45,9 +47,24 @@ export function PromptBar({
   extra?: ReactNode;
   attachment?: AttachmentProps;
   canSubmit?: (value: string) => boolean;
+  /** Prefill the input (e.g. edit message). Remounts when draftNonce changes. */
+  draft?: string;
+  draftNonce?: number;
   onSubmit: (value: string) => void;
   onStop?: () => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (draftNonce <= 0 || draft == null) return;
+    const input = inputRef.current;
+    if (!input) return;
+    input.value = draft;
+    input.focus();
+    const len = draft.length;
+    input.setSelectionRange(len, len);
+  }, [draft, draftNonce]);
+
   function handle(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
@@ -87,8 +104,11 @@ export function PromptBar({
           </>
         ) : null}
         <input
+          ref={inputRef}
+          key={draftNonce > 0 ? `draft-${draftNonce}` : "prompt"}
           name="q"
           disabled={busy}
+          defaultValue={draftNonce > 0 ? draft : undefined}
           placeholder={placeholder}
           className="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm outline-none placeholder:text-[var(--txt2)] disabled:opacity-60"
         />

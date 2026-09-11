@@ -14,6 +14,7 @@ import {
 } from "@/lib/sse";
 import { ContextCards, type ContextItem } from "./ContextCards";
 import { DatasetGuide } from "./DatasetGuide";
+import { MessageActions } from "./MessageActions";
 import { PromptBar } from "./PromptBar";
 import { StreamingText } from "./StreamingText";
 import {
@@ -43,12 +44,26 @@ function formatElapsed(ms: number) {
   return `${m}m ${s}s`;
 }
 
-function UserBubble({ text }: { text: string }) {
+function UserBubble({
+  text,
+  onEdit,
+  disabled,
+}: {
+  text: string;
+  onEdit?: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <div className="flex justify-end">
+    <div className="flex flex-col items-end gap-1">
       <div className="max-w-[min(85%,42rem)] rounded-2xl rounded-tr-sm border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm">
         {text}
       </div>
+      <MessageActions
+        align="end"
+        copyText={text}
+        onEdit={onEdit}
+        disabled={disabled}
+      />
     </div>
   );
 }
@@ -56,25 +71,33 @@ function UserBubble({ text }: { text: string }) {
 function AssistantBubble({
   text,
   error,
+  showActions,
 }: {
   text: string;
   error?: string;
+  showActions?: boolean;
 }) {
   if (error) {
     return (
-      <div className="flex justify-start">
+      <div className="flex flex-col items-start gap-1">
         <p className="max-w-[min(92%,48rem)] whitespace-pre-line rounded-2xl rounded-tl-sm border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-4 py-3 text-sm text-[var(--warn)]">
           {error}
         </p>
+        {showActions ? (
+          <MessageActions align="start" copyText={error} />
+        ) : null}
       </div>
     );
   }
   if (!text) return null;
   return (
-    <div className="flex justify-start">
+    <div className="flex flex-col items-start gap-1">
       <div className="max-w-[min(92%,48rem)] rounded-2xl rounded-tl-sm border border-[var(--line)] bg-[var(--bg2)] px-4 py-3">
         <StreamingText text={text} />
       </div>
+      {showActions ? (
+        <MessageActions align="start" copyText={text} />
+      ) : null}
     </div>
   );
 }
@@ -98,6 +121,8 @@ export function DemoWorkspace({ demo }: Props) {
   const [workflow, setWorkflow] = useState("recipe");
   const [url, setUrl] = useState("");
   const [fileNames, setFileNames] = useState<string[]>([]);
+  const [draft, setDraft] = useState("");
+  const [draftNonce, setDraftNonce] = useState(0);
 
   useEffect(() => {
     if (!busy) return;
@@ -206,6 +231,24 @@ export function DemoWorkspace({ demo }: Props) {
 
   function stopRun() {
     abortRef.current?.abort();
+  }
+
+  function beginEdit(message: string, historyIndex?: number) {
+    if (busy || demo.kind === "form") return;
+    abortRef.current?.abort();
+    if (typeof historyIndex === "number") {
+      setHistory((prev) => prev.slice(0, historyIndex));
+      setUserMessage("");
+      resetAssistant();
+      setError("");
+    } else {
+      // Editing the in-flight / latest user turn
+      setUserMessage("");
+      resetAssistant();
+      setError("");
+    }
+    setDraft(message);
+    setDraftNonce((n) => n + 1);
   }
 
   async function submit(message: string, extra?: Record<string, string>) {
@@ -428,10 +471,22 @@ export function DemoWorkspace({ demo }: Props) {
           ) : null}
 
           <div className="flex flex-col gap-4 pb-6">
-            {history.map((turn) => (
+            {history.map((turn, index) => (
               <div key={turn.id} className="space-y-4">
-                <UserBubble text={turn.user} />
-                <AssistantBubble text={turn.text} error={turn.error} />
+                <UserBubble
+                  text={turn.user}
+                  disabled={busy}
+                  onEdit={
+                    demo.kind === "form"
+                      ? undefined
+                      : () => beginEdit(turn.user, index)
+                  }
+                />
+                <AssistantBubble
+                  text={turn.text}
+                  error={turn.error}
+                  showActions
+                />
                 {turn.images.map((src, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -446,7 +501,15 @@ export function DemoWorkspace({ demo }: Props) {
 
             {userMessage ? (
               <div className="space-y-4">
-                <UserBubble text={userMessage} />
+                <UserBubble
+                  text={userMessage}
+                  disabled={busy}
+                  onEdit={
+                    demo.kind === "form" || busy
+                      ? undefined
+                      : () => beginEdit(userMessage)
+                  }
+                />
                 {showTimeline ? (
                   <StatusTimeline
                     steps={statusSteps}
@@ -455,7 +518,11 @@ export function DemoWorkspace({ demo }: Props) {
                   />
                 ) : null}
                 <ContextCards items={contexts} />
-                <AssistantBubble text={text} error={error || undefined} />
+                <AssistantBubble
+                  text={text}
+                  error={error || undefined}
+                  showActions={!busy && Boolean(text || error)}
+                />
                 {images.map((src, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -526,6 +593,8 @@ export function DemoWorkspace({ demo }: Props) {
             <PromptBar
               placeholder={demo.placeholder || "Write a message…"}
               busy={busy}
+              draft={draft}
+              draftNonce={draftNonce}
               extra={hasExtraFields ? extraFields : undefined}
               attachment={
                 needsFile
