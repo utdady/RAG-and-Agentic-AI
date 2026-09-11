@@ -38,5 +38,6 @@ Transcript + FAISS index are **cached per video id** for the process lifetime.
 ## Notes
 
 - Videos without an English transcript will fail gracefully.
-- First run downloads the embedding model weights.
+- Embedding model weights download on first **Ask** (Q&A), not on summarize.
+- Hub summarize path skips Gradio / MiniLM so small Render instances do not OOM.
 - Original IBM / Watsonx lab paste: [`reference/original-lab-notes.md`](reference/original-lab-notes.md).

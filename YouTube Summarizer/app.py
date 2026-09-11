@@ -1,6 +1,9 @@
 """
 AI-Powered YouTube Summarizer + QA (RAG)
-Transcript → chunk → local embeddings → FAISS → Groq/Ollama summary & answers → Gradio
+Transcript → Groq/Ollama summary; optional FAISS RAG for Q&A → Gradio
+
+Embeddings / FAISS / Gradio load only when needed so the hub summarize path
+stays light enough for small Render instances.
 """
 
 from __future__ import annotations
@@ -9,30 +12,29 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-import gradio as gr
-from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from youtube_transcript_api import YouTubeTranscriptApi
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from shared.embeddings import get_embedding_model, resolve_embedding_model
 from shared.env_load import load_env
 from shared.llm import describe_setup, get_llm_info
 
+if TYPE_CHECKING:
+    from langchain_community.vectorstores import FAISS
+
 load_env(Path(__file__).resolve().parent)
 llm, llm_info = get_llm_info(temperature=0.3)
-embeddings = get_embedding_model()
 print(describe_setup())
-print(f"Embeddings={resolve_embedding_model()}")
 
 # video_id -> {"processed": str, "faiss": FAISS | None}
-_cache: dict[str, dict] = {}
+_cache: dict[str, dict[str, Any]] = {}
+_embeddings = None
 
 VIDEO_ID_RE = re.compile(
     r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)"
@@ -126,11 +128,23 @@ def chunk_transcript(
     chunk_size: int = 500,
     chunk_overlap: int = 50,
 ) -> list[str]:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
     return splitter.split_text(processed_transcript)
+
+
+def _get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        from shared.embeddings import get_embedding_model, resolve_embedding_model
+
+        _embeddings = get_embedding_model()
+        print(f"Embeddings={resolve_embedding_model()}")
+    return _embeddings
 
 
 def _ensure_processed(video_url: str) -> tuple[str | None, str]:
@@ -153,12 +167,14 @@ def _ensure_processed(video_url: str) -> tuple[str | None, str]:
 
 
 def _ensure_faiss(video_id: str, processed: str) -> FAISS:
+    from langchain_community.vectorstores import FAISS
+
     entry = _cache.setdefault(video_id, {"processed": processed, "faiss": None})
     if entry.get("faiss") is not None:
         return entry["faiss"]
 
     chunks = chunk_transcript(processed)
-    index = FAISS.from_texts(chunks, embeddings)
+    index = FAISS.from_texts(chunks, _get_embeddings())
     entry["faiss"] = index
     entry["processed"] = processed
     return index
@@ -193,32 +209,38 @@ def answer_question(video_url: str, user_question: str) -> str:
     return qa_chain.invoke({"context": context, "question": user_question.strip()})
 
 
-with gr.Blocks(title="YouTube Summarizer & QA") as interface:
-    gr.Markdown(
-        f"## YouTube Summarizer & QA (RAG)\n"
-        f"LLM: `{llm_info.provider}:{llm_info.model}` · "
-        f"Embeddings: `{resolve_embedding_model()}`"
-    )
-    video_url = gr.Textbox(
-        label="YouTube Video URL",
-        placeholder="https://www.youtube.com/watch?v=...",
-    )
-    with gr.Row():
-        summarize_btn = gr.Button("Summarize Video", variant="primary")
-        question_btn = gr.Button("Ask a Question")
-    summary_output = gr.Textbox(label="Video Summary", lines=6)
-    question_input = gr.Textbox(
-        label="Ask a Question About the Video",
-        placeholder="What is the main topic?",
-    )
-    answer_output = gr.Textbox(label="Answer", lines=6)
+def build_interface():
+    import gradio as gr
+    from shared.embeddings import resolve_embedding_model
 
-    summarize_btn.click(summarize_video, inputs=video_url, outputs=summary_output)
-    question_btn.click(
-        answer_question,
-        inputs=[video_url, question_input],
-        outputs=answer_output,
-    )
+    with gr.Blocks(title="YouTube Summarizer & QA") as demo:
+        gr.Markdown(
+            f"## YouTube Summarizer & QA (RAG)\n"
+            f"LLM: `{llm_info.provider}:{llm_info.model}` · "
+            f"Embeddings: `{resolve_embedding_model()}` (loaded on first Ask)"
+        )
+        video_url = gr.Textbox(
+            label="YouTube Video URL",
+            placeholder="https://www.youtube.com/watch?v=...",
+        )
+        with gr.Row():
+            summarize_btn = gr.Button("Summarize Video", variant="primary")
+            question_btn = gr.Button("Ask a Question")
+        summary_output = gr.Textbox(label="Video Summary", lines=6)
+        question_input = gr.Textbox(
+            label="Ask a Question About the Video",
+            placeholder="What is the main topic?",
+        )
+        answer_output = gr.Textbox(label="Answer", lines=6)
+
+        summarize_btn.click(summarize_video, inputs=video_url, outputs=summary_output)
+        question_btn.click(
+            answer_question,
+            inputs=[video_url, question_input],
+            outputs=answer_output,
+        )
+    return demo
+
 
 if __name__ == "__main__":
-    interface.launch(server_name="0.0.0.0", server_port=7860)
+    build_interface().launch(server_name="0.0.0.0", server_port=7860)
