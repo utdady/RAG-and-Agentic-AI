@@ -138,8 +138,7 @@ def _fetch_via_transcript_api(video_id: str):
     return transcript
 
 
-def _fetch_via_ytdlp(video_id: str) -> str:
-    """Fallback when youtube-transcript-api is blocked from cloud IPs."""
+def _fetch_via_ytdlp_urls(video_id: str) -> str:
     import requests
     import yt_dlp
 
@@ -148,7 +147,7 @@ def _fetch_via_ytdlp(video_id: str) -> str:
         "quiet": True,
         "no_warnings": True,
         "skip_download": True,
-        "extract_flat": False,
+        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
     }
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -162,6 +161,7 @@ def _fetch_via_ytdlp(video_id: str) -> str:
             for fmt in formats or []:
                 if fmt.get("url") and fmt.get("ext") in {
                     "vtt",
+                    "srt",
                     "srv1",
                     "srv2",
                     "srv3",
@@ -175,13 +175,65 @@ def _fetch_via_ytdlp(video_id: str) -> str:
     if not candidates:
         return ""
 
-    candidates.sort(key=lambda f: 0 if f.get("ext") == "vtt" else 1)
+    prefer = {"vtt": 0, "srt": 1, "json3": 2}
+    candidates.sort(key=lambda f: prefer.get(str(f.get("ext")), 9))
     resp = requests.get(candidates[0]["url"], timeout=60)
     resp.raise_for_status()
     body = resp.text
-    if candidates[0].get("ext") == "json3":
+    ext = candidates[0].get("ext")
+    if ext == "json3":
         return _json3_to_text(body)
+    if ext == "srt":
+        return _srt_to_text(body)
     return _vtt_to_text(body)
+
+
+def _fetch_via_ytdlp(video_id: str) -> str:
+    """Fallback when youtube-transcript-api is blocked from cloud IPs."""
+    import tempfile
+    from pathlib import Path
+
+    import yt_dlp
+
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    with tempfile.TemporaryDirectory() as tmp:
+        outtmpl = str(Path(tmp) / "%(id)s")
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+            "writesubtitles": True,
+            "writeautomaticsub": True,
+            "subtitleslangs": ["en", "en-US", "en-GB"],
+            "subtitlesformat": "vtt/srt/best",
+            "outtmpl": outtmpl,
+            "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+        }
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([url])
+        for path in sorted(Path(tmp).glob("*")):
+            if path.suffix.lower() == ".vtt":
+                text = _vtt_to_text(path.read_text(encoding="utf-8", errors="ignore"))
+                if text.strip():
+                    return text
+            if path.suffix.lower() == ".srt":
+                text = _srt_to_text(path.read_text(encoding="utf-8", errors="ignore"))
+                if text.strip():
+                    return text
+
+    return _fetch_via_ytdlp_urls(video_id)
+
+
+def _srt_to_text(srt: str) -> str:
+    lines: list[str] = []
+    for raw in srt.splitlines():
+        line = raw.strip()
+        if not line or line.isdigit() or "-->" in line:
+            continue
+        line = VTT_TAG_RE.sub("", line).strip()
+        if line and (not lines or lines[-1] != line):
+            lines.append(line)
+    return " ".join(lines)
 
 
 def _json3_to_text(raw: str) -> str:
@@ -204,6 +256,7 @@ def get_transcript_text(url: str) -> str:
         return ""
 
     primary_err: Exception | None = None
+    fallback_err: Exception | None = None
     try:
         fetched = _fetch_via_transcript_api(video_id)
         text = process(fetched)
@@ -217,11 +270,19 @@ def get_transcript_text(url: str) -> str:
         if text.strip():
             return text
     except Exception as exc:  # noqa: BLE001
-        if primary_err is None:
-            primary_err = exc
+        fallback_err = exc
 
-    if primary_err is not None:
-        raise primary_err
+    if primary_err is not None or fallback_err is not None:
+        parts = []
+        if primary_err is not None:
+            parts.append(f"transcript_api={type(primary_err).__name__}: {primary_err}")
+        if fallback_err is not None:
+            parts.append(f"ytdlp={type(fallback_err).__name__}: {fallback_err}")
+        else:
+            parts.append("ytdlp=empty")
+        raise RuntimeError("youtube transcript unavailable; " + " | ".join(parts)) from (
+            primary_err or fallback_err
+        )
     return ""
 
 
