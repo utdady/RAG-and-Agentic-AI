@@ -16,7 +16,7 @@ export function DatasetGuide({
   onStarter: (prompt: string) => void;
 }) {
   return (
-    <div className="max-w-2xl space-y-3 rounded-[10px] border border-[var(--line)] bg-[var(--bg2)] px-4 py-3.5">
+    <div className="mx-auto w-full max-w-2xl space-y-3 rounded-[10px] border border-[var(--line)] bg-[var(--bg2)] px-4 py-3.5 sm:max-w-none">
       <div>
         <p className="mb-1 font-mono text-[11px] uppercase tracking-wider text-accent">
           Dataset

@@ -46,7 +46,7 @@ function formatElapsed(ms: number) {
 function UserBubble({ text }: { text: string }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[85%] rounded-2xl rounded-tr-sm border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm">
+      <div className="max-w-[min(85%,42rem)] rounded-2xl rounded-tr-sm border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm">
         {text}
       </div>
     </div>
@@ -63,7 +63,7 @@ function AssistantBubble({
   if (error) {
     return (
       <div className="flex justify-start">
-        <p className="max-w-[90%] whitespace-pre-line rounded-2xl rounded-tl-sm border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-4 py-3 text-sm text-[var(--warn)]">
+        <p className="max-w-[min(92%,48rem)] whitespace-pre-line rounded-2xl rounded-tl-sm border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-4 py-3 text-sm text-[var(--warn)]">
           {error}
         </p>
       </div>
@@ -72,7 +72,7 @@ function AssistantBubble({
   if (!text) return null;
   return (
     <div className="flex justify-start">
-      <div className="max-w-[90%] rounded-2xl rounded-tl-sm border border-[var(--line)] bg-[var(--bg2)] px-4 py-3">
+      <div className="max-w-[min(92%,48rem)] rounded-2xl rounded-tl-sm border border-[var(--line)] bg-[var(--bg2)] px-4 py-3">
         <StreamingText text={text} />
       </div>
     </div>
@@ -343,181 +343,185 @@ export function DemoWorkspace({ demo }: Props) {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col text-left lg:min-h-0">
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-6 lg:px-10 lg:pt-10">
-        <header className="mb-6 max-w-3xl space-y-3">
-          <h2 className="font-display text-2xl font-bold">{demo.title}</h2>
-          <p className="text-sm text-[var(--txt2)]">{demo.tagline}</p>
-          {demo.description ? (
-            <p className="text-sm leading-relaxed text-[var(--txt2)]/90">
-              {demo.description}
-            </p>
-          ) : null}
-          {demo.tips?.length ? (
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--txt2)]">
-                How to get good results
+        <div className="mx-auto w-full max-w-4xl">
+          <header className="mb-6 space-y-3">
+            <h2 className="font-display text-2xl font-bold">{demo.title}</h2>
+            <p className="text-sm text-[var(--txt2)]">{demo.tagline}</p>
+            {demo.description ? (
+              <p className="text-sm leading-relaxed text-[var(--txt2)]/90">
+                {demo.description}
               </p>
-              <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed text-[var(--txt2)]/90">
-                {demo.tips.map((tip) => (
-                  <li key={tip}>{tip}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            {demo.tags.map((t) => (
-              <span
-                key={t}
-                className="rounded-md border border-[var(--line)] px-2 py-0.5 font-mono text-[11px] text-accent"
+            ) : null}
+            {demo.tips?.length ? (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium uppercase tracking-wide text-[var(--txt2)]">
+                  How to get good results
+                </p>
+                <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed text-[var(--txt2)]/90">
+                  {demo.tips.map((tip) => (
+                    <li key={tip}>{tip}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {demo.tags.map((t) => (
+                <span
+                  key={t}
+                  className="rounded-md border border-[var(--line)] px-2 py-0.5 font-mono text-[11px] text-accent"
+                >
+                  {t}
+                </span>
+              ))}
+              <a
+                className="text-sm text-[var(--txt2)] underline decoration-[var(--line)] hover:text-accent"
+                href={`${GITHUB_BASE}/${demo.github}`}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                {t}
-              </span>
+                Source
+              </a>
+            </div>
+            {demo.kind === "healthcare" ? (
+              <p className="rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">
+                Educational demo only — not medical or mental-health care.
+              </p>
+            ) : null}
+          </header>
+
+          {demo.guide ? (
+            <div className="mb-6">
+              <DatasetGuide
+                blurb={demo.guide.blurb}
+                tables={demo.guide.tables}
+                starters={demo.guide.starters}
+                busy={busy}
+                onStarter={(prompt) => {
+                  void submit(prompt);
+                }}
+              />
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-4 pb-6">
+            {history.map((turn) => (
+              <div key={turn.id} className="space-y-4">
+                <UserBubble text={turn.user} />
+                <AssistantBubble text={turn.text} error={turn.error} />
+                {turn.images.map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={`${turn.id}-img-${i}`}
+                    src={src}
+                    alt="Demo output"
+                    className="max-h-80 rounded-xl border border-[var(--line)]"
+                  />
+                ))}
+              </div>
             ))}
-            <a
-              className="text-sm text-[var(--txt2)] underline decoration-[var(--line)] hover:text-accent"
-              href={`${GITHUB_BASE}/${demo.github}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Source
-            </a>
+
+            {userMessage ? (
+              <div className="space-y-4">
+                <UserBubble text={userMessage} />
+                {showTimeline ? (
+                  <StatusTimeline
+                    steps={statusSteps}
+                    busy={busy && !text && !images.length && !error}
+                    elapsed={elapsed || undefined}
+                  />
+                ) : null}
+                <ContextCards items={contexts} />
+                <AssistantBubble text={text} error={error || undefined} />
+                {images.map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={`current-img-${i}`}
+                    src={src}
+                    alt="Demo output"
+                    className="max-h-80 rounded-xl border border-[var(--line)]"
+                  />
+                ))}
+              </div>
+            ) : null}
+            <div ref={chatEndRef} />
           </div>
-          {demo.kind === "healthcare" ? (
-            <p className="rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">
-              Educational demo only — not medical or mental-health care.
-            </p>
-          ) : null}
-        </header>
-
-        {demo.guide ? (
-          <div className="mb-6 max-w-3xl">
-            <DatasetGuide
-              blurb={demo.guide.blurb}
-              tables={demo.guide.tables}
-              starters={demo.guide.starters}
-              busy={busy}
-              onStarter={(prompt) => {
-                void submit(prompt);
-              }}
-            />
-          </div>
-        ) : null}
-
-        <div className="flex max-w-3xl flex-col gap-4 pb-6">
-          {history.map((turn) => (
-            <div key={turn.id} className="space-y-4">
-              <UserBubble text={turn.user} />
-              <AssistantBubble text={turn.text} error={turn.error} />
-              {turn.images.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={`${turn.id}-img-${i}`}
-                  src={src}
-                  alt="Demo output"
-                  className="max-h-80 rounded-xl border border-[var(--line)]"
-                />
-              ))}
-            </div>
-          ))}
-
-          {userMessage ? (
-            <div className="space-y-4">
-              <UserBubble text={userMessage} />
-              {showTimeline ? (
-                <StatusTimeline
-                  steps={statusSteps}
-                  busy={busy && !text && !images.length && !error}
-                  elapsed={elapsed || undefined}
-                />
-              ) : null}
-              <ContextCards items={contexts} />
-              <AssistantBubble text={text} error={error || undefined} />
-              {images.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={`current-img-${i}`}
-                  src={src}
-                  alt="Demo output"
-                  className="max-h-80 rounded-xl border border-[var(--line)]"
-                />
-              ))}
-            </div>
-          ) : null}
-          <div ref={chatEndRef} />
         </div>
       </div>
 
       <div className="shrink-0 border-t border-[var(--line)] bg-[var(--bg)] px-6 py-4 lg:px-10">
-        {demo.kind === "form" ? (
-          <form
-            onSubmit={onFormSubmit}
-            className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4"
-          >
-            <input
-              name="meal_name"
-              defaultValue="weeknight pasta"
-              placeholder="Meal"
-              className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
+        <div className="mx-auto w-full max-w-4xl">
+          {demo.kind === "form" ? (
+            <form
+              onSubmit={onFormSubmit}
+              className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4"
+            >
+              <input
+                name="meal_name"
+                defaultValue="weeknight pasta"
+                placeholder="Meal"
+                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
+              />
+              <input
+                name="servings"
+                defaultValue="4"
+                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
+              />
+              <input
+                name="budget"
+                defaultValue="moderate"
+                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
+              />
+              <input
+                name="dietary"
+                placeholder="dietary restrictions"
+                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
+              />
+              <input
+                name="cooking_skill"
+                defaultValue="intermediate"
+                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
+              />
+              {busy ? (
+                <button
+                  type="button"
+                  onClick={stopRun}
+                  className="rounded-xl border border-[var(--warn)]/50 bg-[var(--warn)]/15 px-4 py-2 text-sm font-medium text-[var(--warn)] hover:bg-[var(--warn)]/25"
+                >
+                  Stop
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-black"
+                >
+                  Plan meal
+                </button>
+              )}
+            </form>
+          ) : (
+            <PromptBar
+              placeholder={demo.placeholder || "Write a message…"}
+              busy={busy}
+              extra={hasExtraFields ? extraFields : undefined}
+              attachment={
+                needsFile
+                  ? {
+                      accept: fileAccept,
+                      multiple: demo.kind === "docs",
+                      inputRef: fileRef,
+                      fileNames,
+                      onFilesChange,
+                    }
+                  : undefined
+              }
+              canSubmit={canSubmitMessage}
+              onSubmit={(v) => {
+                void submit(v);
+              }}
+              onStop={stopRun}
             />
-            <input
-              name="servings"
-              defaultValue="4"
-              className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-            />
-            <input
-              name="budget"
-              defaultValue="moderate"
-              className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-            />
-            <input
-              name="dietary"
-              placeholder="dietary restrictions"
-              className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-            />
-            <input
-              name="cooking_skill"
-              defaultValue="intermediate"
-              className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-            />
-            {busy ? (
-              <button
-                type="button"
-                onClick={stopRun}
-                className="rounded-xl border border-[var(--warn)]/50 bg-[var(--warn)]/15 px-4 py-2 text-sm font-medium text-[var(--warn)] hover:bg-[var(--warn)]/25"
-              >
-                Stop
-              </button>
-            ) : (
-              <button
-                type="submit"
-                className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-black"
-              >
-                Plan meal
-              </button>
-            )}
-          </form>
-        ) : (
-          <PromptBar
-            placeholder={demo.placeholder || "Write a message…"}
-            busy={busy}
-            extra={hasExtraFields ? extraFields : undefined}
-            attachment={
-              needsFile
-                ? {
-                    accept: fileAccept,
-                    multiple: demo.kind === "docs",
-                    inputRef: fileRef,
-                    fileNames,
-                    onFilesChange,
-                  }
-                : undefined
-            }
-            canSubmit={canSubmitMessage}
-            onSubmit={(v) => {
-              void submit(v);
-            }}
-            onStop={stopRun}
-          />
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
