@@ -252,15 +252,76 @@ export const DEMOS: Demo[] = [
     description:
       "Ask for charts or stats on the bundled student-mat dataset (grades, study time, absences, and more). The agent writes pandas code, runs it, and returns plots or summaries — no need to upload files.",
     tips: [
+      "Use the dataset panel below to scan columns, then pick a starter or ask your own chart/stat question.",
       "Name the column or outcome you care about (e.g. G3, studytime, absences) and the chart type you want.",
-      "Try “plot average G3 by study time” or “histogram of absences” — one task per message works best.",
-      "Ask for a table or summary first if you’re not sure which columns exist.",
+      "One task per message works best — e.g. a single bar chart or scatter, not three plots at once.",
     ],
     phase: 3,
     kind: "chat",
     github: "Data%20Viz%20Agent",
     tags: ["pandas", "matplotlib"],
     placeholder: "Plot average G3 by study time",
+    guide: {
+      blurb:
+        "student-mat is a UCI sample of Portuguese secondary students in math class (~395 rows). Grades G1–G3 are period/final marks; lifestyle and family fields are mostly coded categories (often 1–5). Explore columns below, then try a starter or ask for a chart.",
+      tables: [
+        {
+          name: "Outcomes",
+          columns: ["G1", "G2", "G3", "failures", "absences"],
+        },
+        {
+          name: "Study & school",
+          columns: [
+            "school",
+            "studytime",
+            "traveltime",
+            "schoolsup",
+            "paid",
+            "activities",
+            "higher",
+            "reason",
+          ],
+        },
+        {
+          name: "Family & background",
+          columns: [
+            "sex",
+            "age",
+            "address",
+            "famsize",
+            "Pstatus",
+            "Medu",
+            "Fedu",
+            "Mjob",
+            "Fjob",
+            "guardian",
+            "famsup",
+            "famrel",
+          ],
+        },
+        {
+          name: "Lifestyle",
+          columns: [
+            "internet",
+            "romantic",
+            "freetime",
+            "goout",
+            "Dalc",
+            "Walc",
+            "health",
+            "nursery",
+          ],
+        },
+      ],
+      starters: [
+        "How many rows are in this dataset?",
+        "Generate a bar chart of gender (sex) counts",
+        "Create a box plot of freetime vs G3",
+        "Scatter plot absences vs G3",
+        "Bar chart of average G3 for internet yes vs no",
+        "Pie chart of average Walc by sex",
+      ],
+    },
   },
   {
     slug: "data-analysis",
