@@ -92,7 +92,7 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
             code="usage_minute",
         )
 
-    if "groq_api_key" in lower or "api key" in lower and "not set" in lower:
+    if "groq_api_key" in lower or ("api key" in lower and "not set" in lower):
         return demo_unavailable()
 
     if "model_not_found" in lower or (
@@ -107,7 +107,42 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
             code="model_unavailable",
         )
 
-    if "401" in raw or "invalid api key" in lower or "authentication" in lower:
+    youtube_markers = (
+        "requestblocked",
+        "ipblocked",
+        "couldnotretrievetranscript",
+        "transcriptsdisabled",
+        "notranscriptfound",
+        "youtuberequestfailed",
+        "youtube-transcript",
+        "youtube_transcript",
+        "youtube transcript unavailable",
+        "sign in to confirm",
+        "confirm you're not a bot",
+        "confirm you are not a bot",
+    )
+    if any(m in lower for m in youtube_markers) or (
+        "youtube" in lower
+        and (
+            "blocked" in lower
+            or "transcript" in lower
+            or "bot" in lower
+            or "cookie" in lower
+        )
+    ):
+        return UserFacingError(
+            title="Couldn't fetch the transcript",
+            message=(
+                "YouTube blocked caption access from the demo server for this video. "
+                "Try another public video, or retry in a few minutes."
+            ),
+            code="youtube_transcript",
+        )
+
+    if "invalid api key" in lower or (
+        re.search(r"\b401\b", raw)
+        and ("groq" in lower or "unauthorized" in lower or "api key" in lower)
+    ):
         return demo_unavailable()
 
     if "upload" in lower and "first" in lower:
@@ -142,28 +177,6 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
                 "Try a shorter video, or run Summarize only (skip Ask/Q&A)."
             ),
             code="oom",
-        )
-
-    youtube_markers = (
-        "requestblocked",
-        "ipblocked",
-        "couldnotretrievetranscript",
-        "transcriptsdisabled",
-        "notranscriptfound",
-        "youtuberequestfailed",
-        "youtube-transcript",
-        "youtube_transcript",
-    )
-    if any(m in lower for m in youtube_markers) or (
-        "youtube" in lower and ("blocked" in lower or "transcript" in lower)
-    ):
-        return UserFacingError(
-            title="Couldn't fetch the transcript",
-            message=(
-                "YouTube blocked or has no English captions for this video from the demo server. "
-                "Try a different public video with captions."
-            ),
-            code="youtube_transcript",
         )
 
     snip = re.sub(r"\s+", " ", raw).strip()[:160]

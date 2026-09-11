@@ -249,41 +249,91 @@ def _json3_to_text(raw: str) -> str:
     return " ".join(parts)
 
 
+def _fetch_via_groq_whisper(video_id: str) -> str:
+    """Last resort: download audio via yt-dlp and transcribe with Groq Whisper."""
+    import tempfile
+    from pathlib import Path
+
+    import yt_dlp
+    from groq import Groq
+
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not set")
+
+    max_bytes = int(os.getenv("YT_WHISPER_MAX_BYTES", str(24 * 1024 * 1024)))
+    with tempfile.TemporaryDirectory() as tmp:
+        outtmpl = str(Path(tmp) / "audio.%(ext)s")
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "format": "bestaudio[filesize<25M]/bestaudio/best",
+            "outtmpl": outtmpl,
+            "extractor_args": {"youtube": {"player_client": ["android", "ios", "web"]}},
+        }
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
+        files = sorted(Path(tmp).glob("audio.*"))
+        if not files:
+            raise RuntimeError("yt-dlp downloaded no audio for Whisper fallback")
+        audio_path = files[0]
+        size = audio_path.stat().st_size
+        if size <= 0:
+            raise RuntimeError("downloaded audio was empty")
+        if size > max_bytes:
+            raise RuntimeError(
+                f"audio too large for Whisper fallback ({size} bytes > {max_bytes})"
+            )
+
+        client = Groq(api_key=api_key)
+        with audio_path.open("rb") as fh:
+            result = client.audio.transcriptions.create(
+                file=(audio_path.name, fh.read()),
+                model=os.getenv("GROQ_WHISPER_MODEL", "whisper-large-v3").strip()
+                or "whisper-large-v3",
+                response_format="text",
+                language="en",
+            )
+        text = result if isinstance(result, str) else getattr(result, "text", str(result))
+        return str(text).strip()
+
+
 def get_transcript_text(url: str) -> str:
     """Return plain English transcript text, or raise a clear error."""
     video_id = get_video_id(url)
     if not video_id:
         return ""
 
-    primary_err: Exception | None = None
-    fallback_err: Exception | None = None
+    errors: list[str] = []
+
     try:
         fetched = _fetch_via_transcript_api(video_id)
         text = process(fetched)
         if text.strip():
             return text
+        errors.append("transcript_api=empty")
     except Exception as exc:  # noqa: BLE001
-        primary_err = exc
+        errors.append(f"transcript_api={type(exc).__name__}: {exc}")
 
     try:
         text = _fetch_via_ytdlp(video_id)
         if text.strip():
             return text
+        errors.append("ytdlp_captions=empty")
     except Exception as exc:  # noqa: BLE001
-        fallback_err = exc
+        errors.append(f"ytdlp_captions={type(exc).__name__}: {exc}")
 
-    if primary_err is not None or fallback_err is not None:
-        parts = []
-        if primary_err is not None:
-            parts.append(f"transcript_api={type(primary_err).__name__}: {primary_err}")
-        if fallback_err is not None:
-            parts.append(f"ytdlp={type(fallback_err).__name__}: {fallback_err}")
-        else:
-            parts.append("ytdlp=empty")
-        raise RuntimeError("youtube transcript unavailable; " + " | ".join(parts)) from (
-            primary_err or fallback_err
-        )
-    return ""
+    try:
+        text = _fetch_via_groq_whisper(video_id)
+        if text.strip():
+            return text
+        errors.append("groq_whisper=empty")
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"groq_whisper={type(exc).__name__}: {exc}")
+
+    raise RuntimeError(
+        "youtube transcript unavailable; " + " | ".join(errors)
+    )
 
 
 def get_transcript(url: str):

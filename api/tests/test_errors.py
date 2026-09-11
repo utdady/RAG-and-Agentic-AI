@@ -48,3 +48,21 @@ def test_model_not_found():
     )
     assert err.title == "Vision model unavailable"
     assert "meta-llama" not in err.message
+
+
+def test_youtube_bot_check_not_demo_unavailable():
+    err = humanize_exception(
+        Exception(
+            "youtube transcript unavailable; "
+            "ytdlp=DownloadError: Sign in to confirm you're not a bot"
+        )
+    )
+    assert err.title == "Couldn't fetch the transcript"
+    assert "caption" in err.message.lower() or "blocked" in err.message.lower()
+
+
+def test_unknown_includes_exception_detail():
+    err = humanize_exception(RuntimeError("weird failure xyz"))
+    assert err.title == "Something went wrong"
+    assert "RuntimeError" in err.message
+    assert "weird failure xyz" in err.message
