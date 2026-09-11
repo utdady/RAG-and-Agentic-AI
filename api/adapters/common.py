@@ -20,6 +20,16 @@ _RETIRED_GROQ_VISION_MARKERS = (
 )
 
 
+def hub_heavy_retrieval() -> bool:
+    """Use MiniLM + Chroma when true; BM25/keyword when false (default).
+
+    Free/small Render instances OOM on sentence-transformers. Set
+    HUB_HEAVY_RETRIEVAL=1 on hosts with ~1GB+ RAM when you want semantic RAG.
+    """
+    raw = os.getenv("HUB_HEAVY_RETRIEVAL", "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
 def pin_groq_vision_model() -> str:
     """Force a current Groq vision id for hub image demos (retired ids → qwen)."""
     try:

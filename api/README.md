@@ -17,6 +17,8 @@ SSE: `POST /demos/{slug}/run` as `multipart/form-data` (`message`, optional `fil
 
 Production secrets: `GROQ_API_KEY`, `LLM_PROVIDER=groq`. Optional: `SERPER_API_KEY`. Whisper uses `WHISPER_MODEL=openai/whisper-tiny.en` by default.
 
+**Retrieval mode:** `HUB_HEAVY_RETRIEVAL=0` (default) uses BM25/keyword for DocChat and Food Search so small Render instances don’t OOM. Set `HUB_HEAVY_RETRIEVAL=1` on hosts with ~1GB+ RAM to enable MiniLM + Chroma. `/health` reports `heavy_retrieval`.
+
 CORS is open for the Vercel hub and portfolio. Set `CORS_ORIGINS` to tighten later.
 
 **Production deploy:** see [`../DEPLOY.md`](../DEPLOY.md) — Oracle Cloud (free) or Railway. Oracle guide: [`../docs/deploy/oracle.md`](../docs/deploy/oracle.md).

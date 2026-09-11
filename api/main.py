@@ -5,6 +5,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.adapters.common import hub_heavy_retrieval
 from api.bootstrap import groq_ready
 from api.catalog import DEMOS
 from api.routers.demos import router as demos_router
@@ -44,4 +45,5 @@ def health() -> dict:
         "llm_provider": os.getenv("LLM_PROVIDER", "groq"),
         "demos": len(DEMOS),
         "revision": HUB_REVISION,
+        "heavy_retrieval": hub_heavy_retrieval(),
     }

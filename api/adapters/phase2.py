@@ -3,12 +3,13 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from api.adapters.common import finish_text, require_groq
+from api.adapters.common import finish_text, hub_heavy_retrieval, require_groq
 from api.bootstrap import add_app, prepare_app_import, prepare_demo_import
 from api.events import context, task, thinking
 
 _ice_sid: str | None = None
 _food_items: list[dict[str, Any]] | None = None
+_food_collection = None
 
 
 def run_connoisseur(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
@@ -135,9 +136,17 @@ def run_docchat(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
                 "Couldn't extract text from the upload. Try a text-based PDF, DOCX, TXT, or MD file."
             )
             return
-        # BM25-only on the hub: MiniLM + Chroma OOMs free/small Render instances.
-        retriever = BM25Retriever.from_documents(chunks)
-        retriever.k = 6
+        if hub_heavy_retrieval():
+            yield thinking("Building MiniLM + Chroma hybrid index")
+            RetrieverBuilder = importlib.import_module(
+                "retriever.builder"
+            ).RetrieverBuilder
+            retriever = RetrieverBuilder().build_hybrid_retriever(chunks)
+        else:
+            # Default: BM25-only — MiniLM + Chroma OOMs free/small Render instances.
+            # Set HUB_HEAVY_RETRIEVAL=1 when the host has ~1GB+ RAM.
+            retriever = BM25Retriever.from_documents(chunks)
+            retriever.k = 6
         yield task("index", "Document indexer", "completed")
     except Exception as exc:  # noqa: BLE001
         yield task("index", "Document indexer", "failed")
@@ -224,17 +233,27 @@ def run_food_search(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
 
     yield thinking("Loading food catalog")
     add_app("Food Search RAG")
+    heavy = hub_heavy_retrieval()
     try:
         from download_data import main as download_assets  # noqa: WPS433
         from rag_chat import generate_llm_rag_response  # noqa: WPS433
-        from shared_food import load_food_data, perform_keyword_search  # noqa: WPS433
+        from shared_food import load_food_data  # noqa: WPS433
+
+        if heavy:
+            from shared_food import (  # noqa: WPS433
+                create_similarity_search_collection,
+                perform_similarity_search,
+                populate_similarity_collection,
+            )
+        else:
+            from shared_food import perform_keyword_search  # noqa: WPS433
     except Exception as exc:  # noqa: BLE001
         friendly = humanize_exception(exc)
         yield error(friendly.message, title=friendly.title)
         yield done()
         return
 
-    global _food_items
+    global _food_items, _food_collection
     try:
         download_assets()
         if _food_items is None:
@@ -243,9 +262,21 @@ def run_food_search(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
             yield from finish_text("Food catalog failed to load. Try again in a moment.")
             return
 
-        yield thinking("Matching dishes to your request")
-        # Keyword search only — Chroma + MiniLM OOMs small Render instances.
-        hits = perform_keyword_search(_food_items, query, n_results=5)
+        yield thinking(
+            "Embedding food catalog (MiniLM)"
+            if heavy
+            else "Matching dishes to your request"
+        )
+        if heavy:
+            if _food_collection is None:
+                collection = create_similarity_search_collection("hub_food_search")
+                populate_similarity_collection(collection, _food_items)
+                _food_collection = collection
+            hits = perform_similarity_search(_food_collection, query, n_results=5)
+        else:
+            # Default keyword path — Chroma + MiniLM OOMs small Render instances.
+            # Set HUB_HEAVY_RETRIEVAL=1 when the host has ~1GB+ RAM.
+            hits = perform_keyword_search(_food_items, query, n_results=5)
         if hits:
             yield context(
                 hits[0].get("food_name", "Match"),
