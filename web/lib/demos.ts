@@ -25,6 +25,12 @@ export type Demo = {
     blurb: string;
     tags?: string[];
   };
+  /** Orientation panel: dataset blurb, schema peek, starter prompts. */
+  guide?: {
+    blurb: string;
+    tables: { name: string; columns: string[] }[];
+    starters: string[];
+  };
 };
 
 /** Featured hub cards, in display order. */
@@ -75,6 +81,61 @@ export const DEMOS: Demo[] = [
       blurb:
         "Ask Chinook SQLite questions in plain English — agent writes, runs, and self-corrects SQL.",
       tags: ["LangGraph", "Text-to-SQL", "Groq"],
+    },
+    guide: {
+      blurb:
+        "Chinook is a sample digital music store: artists release albums of tracks; customers place invoices. Use the schema below, then pick a starter or ask your own question.",
+      tables: [
+        {
+          name: "Artist",
+          columns: ["ArtistId", "Name"],
+        },
+        {
+          name: "Album",
+          columns: ["AlbumId", "Title", "ArtistId"],
+        },
+        {
+          name: "Track",
+          columns: [
+            "TrackId",
+            "Name",
+            "AlbumId",
+            "GenreId",
+            "Composer",
+            "Milliseconds",
+            "UnitPrice",
+          ],
+        },
+        {
+          name: "Genre",
+          columns: ["GenreId", "Name"],
+        },
+        {
+          name: "Customer",
+          columns: [
+            "CustomerId",
+            "FirstName",
+            "LastName",
+            "Country",
+            "Email",
+          ],
+        },
+        {
+          name: "Invoice",
+          columns: ["InvoiceId", "CustomerId", "InvoiceDate", "Total"],
+        },
+        {
+          name: "InvoiceLine",
+          columns: ["InvoiceLineId", "InvoiceId", "TrackId", "UnitPrice", "Quantity"],
+        },
+      ],
+      starters: [
+        "How many albums are in the database?",
+        "List the top 5 artists by number of tracks",
+        "Which customer spent the most?",
+        "How many tracks are in the Rock genre?",
+        "What are the 10 most expensive tracks?",
+      ],
     },
   },
   {

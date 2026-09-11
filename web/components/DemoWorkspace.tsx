@@ -13,6 +13,7 @@ import {
   type HubEvent,
 } from "@/lib/sse";
 import { ContextCards, type ContextItem } from "./ContextCards";
+import { DatasetGuide } from "./DatasetGuide";
 import { PromptBar } from "./PromptBar";
 import { StreamingText } from "./StreamingText";
 import {
@@ -377,6 +378,17 @@ export function DemoWorkspace({ demo }: Props) {
           <p className="rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">
             Educational demo only — not medical or mental-health care.
           </p>
+        ) : null}
+        {demo.guide ? (
+          <DatasetGuide
+            blurb={demo.guide.blurb}
+            tables={demo.guide.tables}
+            starters={demo.guide.starters}
+            busy={busy}
+            onStarter={(prompt) => {
+              void submit(prompt);
+            }}
+          />
         ) : null}
       </header>
 
