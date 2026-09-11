@@ -122,7 +122,12 @@ def _vtt_to_text(vtt: str) -> str:
 def _fetch_via_transcript_api(video_id: str):
     from youtube_transcript_api import YouTubeTranscriptApi
 
-    ytt_api = YouTubeTranscriptApi()
+    proxy_config = _youtube_proxy_config()
+    ytt_api = (
+        YouTubeTranscriptApi(proxy_config=proxy_config)
+        if proxy_config is not None
+        else YouTubeTranscriptApi()
+    )
     transcripts = ytt_api.list(video_id)
 
     transcript = None
@@ -138,6 +143,41 @@ def _fetch_via_transcript_api(video_id: str):
     return transcript
 
 
+def _youtube_proxy_config():
+    """Optional proxy so cloud hosts can reach YouTube captions."""
+    proxy_url = os.getenv("YOUTUBE_PROXY_URL", "").strip()
+    user = os.getenv("WEBSHARE_PROXY_USERNAME", "").strip()
+    password = os.getenv("WEBSHARE_PROXY_PASSWORD", "").strip()
+    if user and password:
+        try:
+            from youtube_transcript_api.proxies import WebshareProxyConfig
+
+            return WebshareProxyConfig(
+                proxy_username=user,
+                proxy_password=password,
+            )
+        except Exception:
+            pass
+    if proxy_url:
+        try:
+            from youtube_transcript_api.proxies import GenericProxyConfig
+
+            return GenericProxyConfig(
+                http_url=proxy_url,
+                https_url=proxy_url,
+            )
+        except Exception:
+            return None
+    return None
+
+
+def _ytdlp_proxy_opts() -> dict[str, Any]:
+    proxy_url = os.getenv("YOUTUBE_PROXY_URL", "").strip()
+    if proxy_url:
+        return {"proxy": proxy_url}
+    return {}
+
+
 def _fetch_via_ytdlp_urls(video_id: str) -> str:
     import requests
     import yt_dlp
@@ -148,6 +188,7 @@ def _fetch_via_ytdlp_urls(video_id: str) -> str:
         "no_warnings": True,
         "skip_download": True,
         "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+        **_ytdlp_proxy_opts(),
     }
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -208,6 +249,7 @@ def _fetch_via_ytdlp(video_id: str) -> str:
             "subtitlesformat": "vtt/srt/best",
             "outtmpl": outtmpl,
             "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+            **_ytdlp_proxy_opts(),
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([url])
@@ -270,6 +312,7 @@ def _fetch_via_groq_whisper(video_id: str) -> str:
             "format": "bestaudio[filesize<25M]/bestaudio/best",
             "outtmpl": outtmpl,
             "extractor_args": {"youtube": {"player_client": ["android", "ios", "web"]}},
+            **_ytdlp_proxy_opts(),
         }
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([f"https://www.youtube.com/watch?v={video_id}"])

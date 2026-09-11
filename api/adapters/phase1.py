@@ -141,7 +141,7 @@ def run_youtube(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
                 "caption",
             )
         ):
-            snip = " ".join(raw.split())[:240]
+            snip = " ".join(raw.split())[:900]
             yield error(
                 "YouTube blocked caption/audio access from the demo server for this video. "
                 "Try another public video, or retry later."

@@ -39,5 +39,13 @@ Transcript + FAISS index are **cached per video id** for the process lifetime.
 
 - Videos without an English transcript will fail gracefully.
 - Embedding model weights download on first **Ask** (Q&A), not on summarize.
-- Hub summarize path skips Gradio / MiniLM so small Render instances do not OOM.
+## Cloud / Render notes
+
+YouTube often returns **403** to datacenter IPs. Set one of these on the API host:
+
+- `YOUTUBE_PROXY_URL` — HTTP(S) proxy URL used by transcript API + yt-dlp
+- `WEBSHARE_PROXY_USERNAME` + `WEBSHARE_PROXY_PASSWORD` — [Webshare](https://www.webshare.io/) residential proxies via `youtube-transcript-api`
+
+Without a proxy, the hub falls back to yt-dlp captions, then Groq Whisper on downloaded audio — those paths also fail when YouTube blocks the server IP.
+
 - Original IBM / Watsonx lab paste: [`reference/original-lab-notes.md`](reference/original-lab-notes.md).
