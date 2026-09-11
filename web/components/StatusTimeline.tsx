@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export type StatusStep = {
   key: string;
@@ -26,6 +26,45 @@ function statusTone(status: StatusStep["status"]) {
   if (status === "failed") return "text-[var(--warn)]";
   if (status === "done") return "text-[var(--txt3)]";
   return "text-accent";
+}
+
+function GridIcon({ active }: { active?: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      aria-hidden
+      className={`shrink-0 ${active ? "text-accent" : "text-[var(--txt3)]"}`}
+    >
+      <rect x="1" y="1" width="5" height="5" rx="1" />
+      <rect x="10" y="1" width="5" height="5" rx="1" />
+      <rect x="1" y="10" width="5" height="5" rx="1" />
+      <rect x="10" y="10" width="5" height="5" rx="1" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={`shrink-0 text-[var(--txt3)] transition-transform duration-200 ${
+        open ? "rotate-180" : "rotate-0"
+      }`}
+    >
+      <path d="M4 6l4 4 4-4" />
+    </svg>
+  );
 }
 
 function StatusGlyph({ status }: { status: StatusStep["status"] }) {
@@ -62,18 +101,19 @@ export function StatusTimeline({
   busy: boolean;
   elapsed?: string;
 }) {
-  const [open, setOpen] = useState(true);
-
-  useEffect(() => {
-    if (busy) setOpen(true);
-    else if (steps.length > 0) setOpen(false);
-  }, [busy, steps.length]);
+  const [open, setOpen] = useState(false);
 
   if (!steps.length && !busy) return null;
 
   const liveLabel =
     steps.find((s) => s.status === "running")?.label ||
-    (busy ? "Working…" : "Process");
+    (busy ? "Working…" : "");
+
+  const subtitle = busy
+    ? liveLabel || "Starting…"
+    : steps.length
+      ? `${steps.length} step${steps.length === 1 ? "" : "s"}`
+      : "Starting…";
 
   return (
     <details
@@ -83,32 +123,23 @@ export function StatusTimeline({
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
-          {busy ? (
-            <span
-              className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_var(--accent)] task-status-running"
-              aria-hidden
-            />
-          ) : (
-            <span
-              className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--live)]"
-              aria-hidden
-            />
-          )}
+          <GridIcon active={busy} />
           <div className="min-w-0">
             <p className="truncate font-mono text-[12.5px] text-[var(--txt)]">
-              {busy ? liveLabel : "Process"}
+              Process
             </p>
-            <p className="font-mono text-[11px] text-[var(--txt3)]">
-              {steps.length
-                ? `${steps.length} step${steps.length === 1 ? "" : "s"}`
-                : "Starting…"}
+            <p className="truncate font-mono text-[11px] text-[var(--txt3)]">
+              {subtitle}
               {elapsed ? ` · ${elapsed}` : ""}
             </p>
           </div>
         </div>
-        <span className="shrink-0 font-mono text-[11px] text-[var(--txt3)]">
-          {busy ? "live" : "done"}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="font-mono text-[11px] text-[var(--txt3)]">
+            {busy ? "live" : "done"}
+          </span>
+          <ChevronIcon open={open} />
+        </div>
       </summary>
 
       <ol className="space-y-2 border-t border-[var(--line)] px-3.5 py-3">
