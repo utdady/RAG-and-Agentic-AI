@@ -28,21 +28,16 @@ function statusTone(status: StatusStep["status"]) {
   return "text-accent";
 }
 
-function GridIcon({ active }: { active?: boolean }) {
+function PixelGrid({ active }: { active: boolean }) {
   return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 16 16"
-      fill="currentColor"
+    <div
+      className={`pixel-loader pixel-loader-sm shrink-0 ${active ? "" : "is-static"}`}
       aria-hidden
-      className={`shrink-0 ${active ? "text-accent" : "text-[var(--txt3)]"}`}
     >
-      <rect x="1" y="1" width="5" height="5" rx="1" />
-      <rect x="10" y="1" width="5" height="5" rx="1" />
-      <rect x="1" y="10" width="5" height="5" rx="1" />
-      <rect x="10" y="10" width="5" height="5" rx="1" />
-    </svg>
+      {Array.from({ length: 16 }).map((_, i) => (
+        <span key={i} />
+      ))}
+    </div>
   );
 }
 
@@ -123,7 +118,7 @@ export function StatusTimeline({
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
-          <GridIcon active={busy} />
+          <PixelGrid active={busy} />
           <div className="min-w-0">
             <p className="truncate font-mono text-[12.5px] text-[var(--txt)]">
               Process

@@ -44,9 +44,12 @@ export function apiBase() {
   return process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
 }
 
-export async function checkApiHealth(): Promise<boolean> {
+export async function checkApiHealth(signal?: AbortSignal): Promise<boolean> {
   try {
-    const res = await fetch(`${apiBase()}/health`, { cache: "no-store" });
+    const res = await fetch(`${apiBase()}/health`, {
+      cache: "no-store",
+      signal,
+    });
     if (!res.ok) return false;
     const data = (await res.json()) as { ok?: boolean };
     return data.ok === true;

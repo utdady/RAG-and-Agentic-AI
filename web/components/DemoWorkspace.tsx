@@ -230,7 +230,12 @@ export function DemoWorkspace({ demo }: Props) {
   }
 
   function stopRun() {
-    abortRef.current?.abort();
+    const controller = abortRef.current;
+    if (!controller) return;
+    controller.abort();
+    setBusy(false);
+    setStatusSteps((s) => finalizeStatusSteps(s));
+    setError((prev) => prev || "Stopped.");
   }
 
   function beginEdit(message: string, historyIndex?: number) {
@@ -277,7 +282,11 @@ export function DemoWorkspace({ demo }: Props) {
     let gotError = false;
     let sawDone = false;
     try {
-      const healthy = await checkApiHealth();
+      const healthy = await checkApiHealth(controller.signal);
+      if (controller.signal.aborted) {
+        setError("Stopped.");
+        return;
+      }
       if (!healthy) {
         setError(
           "Can't load the demo\n\nThe demo hub isn't responding. Refresh the page and try again.",
@@ -309,9 +318,18 @@ export function DemoWorkspace({ demo }: Props) {
       if (files) {
         for (const f of Array.from(files)) form.append("files", f);
       }
+      if (controller.signal.aborted) {
+        setError("Stopped.");
+        return;
+      }
       const res = await runDemo(demo.slug, form, controller.signal);
+      if (controller.signal.aborted) {
+        setError("Stopped.");
+        return;
+      }
       try {
         for await (const ev of readSse(res, controller.signal)) {
+          if (controller.signal.aborted) break;
           if (ev.type === "token" && ev.text) gotTokens = true;
           if (ev.type === "image" && ev.data) gotImages = true;
           if (ev.type === "error") gotError = true;
@@ -321,12 +339,9 @@ export function DemoWorkspace({ demo }: Props) {
             break;
           }
         }
-        if (
-          !controller.signal.aborted &&
-          !gotTokens &&
-          !gotImages &&
-          !gotError
-        ) {
+        if (controller.signal.aborted) {
+          if (!gotTokens && !gotImages) setError("Stopped.");
+        } else if (!gotTokens && !gotImages && !gotError) {
           setError(
             formatFetchError(
               new Error(sawDone ? "empty" : "truncated"),
@@ -336,14 +351,16 @@ export function DemoWorkspace({ demo }: Props) {
           gotError = true;
         }
       } catch (streamErr) {
-        if (!isAbortError(streamErr) && !gotTokens && !gotImages) {
+        if (controller.signal.aborted || isAbortError(streamErr)) {
+          if (!gotTokens && !gotImages) setError("Stopped.");
+        } else if (!gotTokens && !gotImages) {
           setError(formatFetchError(streamErr, "stream"));
           gotError = true;
         }
         return;
       }
     } catch (e) {
-      if (isAbortError(e)) {
+      if (controller.signal.aborted || isAbortError(e)) {
         if (!gotTokens && !gotImages) setError("Stopped.");
       } else {
         setError(formatFetchError(e, "connect"));
