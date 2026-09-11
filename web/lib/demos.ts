@@ -194,9 +194,9 @@ export const DEMOS: Demo[] = [
     title: "DocChat",
     tagline: "Relevance → research → verify over your docs.",
     description:
-      "Attach one or more PDF, DOCX, TXT, or MD files, then ask a question about them. DocChat indexes your uploads with hybrid search (keyword + semantic), checks whether the question can be answered, drafts a response, and verifies it against the sources — re-researching if needed.",
+      "Attach one or more PDF, DOCX, TXT, or MD files, then ask a question about them. DocChat indexes your uploads, checks whether the question can be answered, drafts a response, and verifies it against the sources — re-researching if needed.",
     tips: [
-      "Attach all relevant files first, then ask a focused question about their content.",
+      "Attach files and type a clear question — both are required to run.",
       "Reference sections, tables, or topics by name when you can.",
       "If the answer is thin, narrow the question or ask about a specific document.",
     ],
@@ -208,7 +208,7 @@ export const DEMOS: Demo[] = [
     featured: {
       blurb:
         "Relevance-check → research → verify pipeline over your own documents, not a single-shot answer.",
-      tags: ["Agentic RAG", "Chroma", "Self-verify"],
+      tags: ["Agentic RAG", "Self-verify"],
     },
   },
   {
