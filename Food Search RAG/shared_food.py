@@ -218,18 +218,35 @@ def perform_keyword_search(
             continue
 
         name = str(food.get("food_name", "")).lower()
+        cuisine = str(food.get("cuisine_type", "")).lower()
+        taste = str(food.get("taste_profile", "")).lower()
         blob = _food_document_text(food).lower()
         score = 0.0
+        matched = 0
         for t in tokens:
+            hit = False
             if t in name:
-                score += 3.0
+                score += 4.0
+                hit = True
+            if t in taste or t in cuisine:
+                score += 2.5
+                hit = True
             if t in blob:
                 score += 1.0
-        if score <= 0:
+                hit = True
+            if hit:
+                matched += 1
+        if matched == 0:
             continue
-        # Prefer lower calories when the query asks for healthy/light.
+        # Prefer multi-token matches (spicy + healthy beats one weak hit).
+        score += matched * 1.5
         if any(w in q for w in ("healthy", "light", "diet", "low")) and cals > 0:
             score += max(0.0, (500 - min(cals, 500)) / 500.0)
+        if "dinner" in q or "lunch" in q or "meal" in q:
+            # Downrank obvious snacks/desserts/nuts.
+            snackish = ("cookie", "macaroon", "seed", "peanut", "chip", "candy", "cake")
+            if any(s in name for s in snackish):
+                score *= 0.35
 
         scored.append(
             (
@@ -244,7 +261,7 @@ def perform_keyword_search(
                     "food_health_benefits": food.get("food_health_benefits", ""),
                     "cooking_method": food.get("cooking_method", ""),
                     "taste_profile": food.get("taste_profile", ""),
-                    "similarity_score": min(score / (3.0 * max(len(tokens), 1)), 1.0),
+                    "similarity_score": min(score / (6.0 * max(len(tokens), 1)), 1.0),
                     "distance": 0.0,
                 },
             )
