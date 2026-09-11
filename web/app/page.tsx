@@ -30,7 +30,7 @@ export default function HomePage() {
 
   return (
     <HubShell>
-      <div className="w-full max-w-[1080px] px-6 py-10 text-left sm:px-8 lg:px-12 lg:py-14">
+      <div className="mx-auto w-full max-w-[1200px] px-6 py-10 text-left sm:px-8 lg:px-12 lg:py-14">
         <nav className="mb-12 flex items-center justify-between font-mono text-[13px] text-[var(--txt2)]">
           <span className="tracking-[0.04em] text-[var(--txt)]">AI LAB</span>
           <div className="flex items-center gap-5">

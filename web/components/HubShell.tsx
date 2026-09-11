@@ -12,5 +12,5 @@ export function HubShell({
     return <DemoShell active={active}>{children}</DemoShell>;
   }
 
-  return <div className="min-h-screen">{children}</div>;
+  return <div className="min-h-screen w-full">{children}</div>;
 }
