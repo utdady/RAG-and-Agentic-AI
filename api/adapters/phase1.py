@@ -128,8 +128,29 @@ def run_youtube(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
             yield thinking("Fetching transcript + summarizing")
             text = summarize_video(url)
     except Exception as exc:  # noqa: BLE001
-        friendly = humanize_exception(exc)
-        yield error(friendly.message, title=friendly.title)
+        raw = str(exc)
+        lower = raw.lower()
+        if any(
+            m in lower
+            for m in (
+                "youtube",
+                "transcript",
+                "yt-dlp",
+                "ytdlp",
+                "whisper",
+                "caption",
+            )
+        ):
+            snip = " ".join(raw.split())[:240]
+            yield error(
+                "YouTube blocked caption/audio access from the demo server for this video. "
+                "Try another public video, or retry later."
+                f"\n\n({type(exc).__name__}: {snip})",
+                title="Couldn't fetch the transcript",
+            )
+        else:
+            friendly = humanize_exception(exc)
+            yield error(friendly.message, title=friendly.title)
         yield done()
         return
     yield from finish_text(text)
