@@ -8,7 +8,7 @@ from api.bootstrap import add_app, prepare_app_import, prepare_demo_import
 from api.events import context, task, thinking
 
 _ice_sid: str | None = None
-_food_collection = None
+_food_items: list[dict[str, Any]] | None = None
 
 
 def run_connoisseur(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
@@ -215,33 +215,50 @@ def run_food_search(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         yield from blocked
         return
     query = (payload.get("message") or "").strip()
-    yield thinking("Searching food catalog")
-    add_app("Food Search RAG")
-    from download_data import main as download_assets  # noqa: WPS433
-    from rag_chat import generate_llm_rag_response  # noqa: WPS433
-    from shared_food import (  # noqa: WPS433
-        create_similarity_search_collection,
-        load_food_data,
-        perform_similarity_search,
-        populate_similarity_collection,
-    )
+    if not query:
+        yield from finish_text("Describe what you want to eat (cuisine, calories, vibe).")
+        return
 
-    global _food_collection
-    download_assets()
-    if _food_collection is None:
-        items = load_food_data()
-        collection = create_similarity_search_collection("hub_food_search")
-        populate_similarity_collection(collection, items)
-        _food_collection = collection
-    hits = perform_similarity_search(_food_collection, query, n_results=5)
-    if hits:
-        yield context(
-            hits[0].get("food_name", "Match"),
-            str(hits[0].get("food_description", ""))[:400],
-            hits[0].get("cuisine_type", "food"),
-        )
-    text = generate_llm_rag_response(query, hits)
-    yield from finish_text(text)
+    from api.errors import humanize_exception
+    from api.events import done, error
+
+    yield thinking("Loading food catalog")
+    add_app("Food Search RAG")
+    try:
+        from download_data import main as download_assets  # noqa: WPS433
+        from rag_chat import generate_llm_rag_response  # noqa: WPS433
+        from shared_food import load_food_data, perform_keyword_search  # noqa: WPS433
+    except Exception as exc:  # noqa: BLE001
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
+        return
+
+    global _food_items
+    try:
+        download_assets()
+        if _food_items is None:
+            _food_items = load_food_data()
+        if not _food_items:
+            yield from finish_text("Food catalog failed to load. Try again in a moment.")
+            return
+
+        yield thinking("Matching dishes to your request")
+        # Keyword search only — Chroma + MiniLM OOMs small Render instances.
+        hits = perform_keyword_search(_food_items, query, n_results=5)
+        if hits:
+            yield context(
+                hits[0].get("food_name", "Match"),
+                str(hits[0].get("food_description", ""))[:400],
+                hits[0].get("cuisine_type", "food"),
+            )
+        yield thinking("Writing recommendations")
+        text = generate_llm_rag_response(query, hits)
+        yield from finish_text(text)
+    except Exception as exc:  # noqa: BLE001
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
 
 
 def run_icebreaker(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:

@@ -153,17 +153,105 @@ def _format_hit(results: dict, i: int) -> dict[str, Any]:
     }
 
 
-def perform_similarity_search(
-    collection, query: str, n_results: int = 5
+def perform_keyword_search(
+    food_items: list[dict],
+    query: str,
+    n_results: int = 5,
+    max_calories: int | None = None,
 ) -> list[dict]:
-    try:
-        results = collection.query(query_texts=[query], n_results=n_results)
-        if not results or not results["ids"] or not results["ids"][0]:
-            return []
-        return [_format_hit(results, i) for i in range(len(results["ids"][0]))]
-    except Exception as e:
-        print(f"Error in similarity search: {e}")
+    """Lightweight ranked search without MiniLM/Chroma (hub-safe on small RAM)."""
+    import re
+
+    q = (query or "").strip().lower()
+    if not q or not food_items:
         return []
+
+    if max_calories is None:
+        m = re.search(
+            r"(?:under|below|less than|max(?:imum)?)\s*(\d+)\s*(?:cal)?",
+            q,
+        )
+        if m:
+            max_calories = int(m.group(1))
+        else:
+            m = re.search(r"(\d+)\s*(?:calories|cals|kcal)\b", q)
+            if m:
+                max_calories = int(m.group(1))
+
+    stop = {
+        "with",
+        "that",
+        "this",
+        "from",
+        "have",
+        "want",
+        "like",
+        "some",
+        "under",
+        "below",
+        "than",
+        "less",
+        "more",
+        "calories",
+        "calorie",
+        "cals",
+        "kcal",
+        "food",
+        "meal",
+        "please",
+        "find",
+        "show",
+        "give",
+    }
+    tokens = [
+        t
+        for t in re.findall(r"[a-z0-9]+", q)
+        if len(t) > 2 and t not in stop and not t.isdigit()
+    ]
+    if not tokens:
+        tokens = [t for t in re.findall(r"[a-z0-9]+", q) if len(t) > 1]
+
+    scored: list[tuple[float, dict]] = []
+    for food in food_items:
+        cals = int(food.get("food_calories_per_serving", 0) or 0)
+        if max_calories is not None and cals > max_calories:
+            continue
+
+        name = str(food.get("food_name", "")).lower()
+        blob = _food_document_text(food).lower()
+        score = 0.0
+        for t in tokens:
+            if t in name:
+                score += 3.0
+            if t in blob:
+                score += 1.0
+        if score <= 0:
+            continue
+        # Prefer lower calories when the query asks for healthy/light.
+        if any(w in q for w in ("healthy", "light", "diet", "low")) and cals > 0:
+            score += max(0.0, (500 - min(cals, 500)) / 500.0)
+
+        scored.append(
+            (
+                score,
+                {
+                    "food_id": str(food.get("food_id", "")),
+                    "food_name": food.get("food_name", ""),
+                    "food_description": food.get("food_description", ""),
+                    "cuisine_type": food.get("cuisine_type", "Unknown"),
+                    "food_calories_per_serving": cals,
+                    "food_ingredients": ", ".join(food.get("food_ingredients", []) or []),
+                    "food_health_benefits": food.get("food_health_benefits", ""),
+                    "cooking_method": food.get("cooking_method", ""),
+                    "taste_profile": food.get("taste_profile", ""),
+                    "similarity_score": min(score / (3.0 * max(len(tokens), 1)), 1.0),
+                    "distance": 0.0,
+                },
+            )
+        )
+
+    scored.sort(key=lambda pair: (-pair[0], pair[1]["food_calories_per_serving"]))
+    return [hit for _, hit in scored[:n_results]]
 
 
 def perform_filtered_similarity_search(
