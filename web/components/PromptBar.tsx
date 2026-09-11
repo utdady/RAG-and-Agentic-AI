@@ -140,7 +140,7 @@ export function PromptBar({
     e.preventDefault();
     if (busy) return;
     const form = e.currentTarget;
-    const input = form.elements.namedItem("q") as HTMLInputElement | null;
+    const input = form.elements.namedItem("lab-prompt") as HTMLInputElement | null;
     if (!input) return;
     const value = input.value.trim();
     const allowed = canSubmit ? canSubmit(value) : value.length > 0;
@@ -162,7 +162,7 @@ export function PromptBar({
   }
 
   return (
-    <form onSubmit={handle} className="space-y-2">
+    <form onSubmit={handle} className="space-y-2" autoComplete="off">
       {extra}
       {attachment && attachment.fileNames.length ? (
         <div className="flex flex-wrap gap-2 px-0.5">
@@ -221,7 +221,12 @@ export function PromptBar({
         <input
           ref={inputRef}
           key={draftNonce > 0 ? `draft-${draftNonce}` : "prompt"}
-          name="q"
+          name="lab-prompt"
+          type="text"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           disabled={busy}
           defaultValue={draftNonce > 0 ? draft : undefined}
           placeholder={placeholder}
