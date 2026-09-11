@@ -45,16 +45,39 @@ def run_sql_agent(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
 
     yield thinking("Translating your question to SQL")
     yield tool("sql_agent", "running")
-    try:
-        answer = run_query(question)
-    except Exception as exc:  # noqa: BLE001
+    # Heartbeat while the blocking LangChain invoke runs so proxies/browsers
+    # don't close the SSE stream before tokens arrive.
+    import queue
+    import threading
+
+    result_q: queue.Queue[tuple[str, Any]] = queue.Queue(maxsize=1)
+
+    def _work() -> None:
+        try:
+            result_q.put(("ok", run_query(question)))
+        except Exception as exc:  # noqa: BLE001
+            result_q.put(("err", exc))
+
+    worker = threading.Thread(target=_work, daemon=True)
+    worker.start()
+    waited = 0
+    while worker.is_alive():
+        worker.join(timeout=6.0)
+        if worker.is_alive():
+            waited += 6
+            yield thinking(f"Still writing SQL and querying Chinook… ({waited}s)")
+
+    kind, payload_or_exc = result_q.get()
+    if kind == "err":
         yield tool("sql_agent", "failed")
         yield from finish_text(
-            f"The SQL agent hit an error: {exc}\n\nTry a simpler question, or retry in a moment."
+            f"The SQL agent hit an error: {payload_or_exc}\n\n"
+            "Try a simpler question, or retry in a moment."
         )
         return
+    answer = payload_or_exc
     yield tool("sql_agent", "done")
-    yield from finish_text(answer or "No answer returned. Try rephrasing the question.")
+    yield from finish_text(str(answer or "").strip() or "No answer returned. Try rephrasing the question.")
 
 
 def run_math_assistant(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:

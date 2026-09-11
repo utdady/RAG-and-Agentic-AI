@@ -86,6 +86,18 @@ function formatFetchError(
   });
 }
 
+function* parseSseChunks(chunks: string[]): Generator<HubEvent> {
+  for (const chunk of chunks) {
+    const line = chunk.split("\n").find((l) => l.startsWith("data: "));
+    if (!line) continue;
+    try {
+      yield JSON.parse(line.slice(6)) as HubEvent;
+    } catch {
+      /* skip malformed */
+    }
+  }
+}
+
 export async function* readSse(
   res: Response,
   signal?: AbortSignal,
@@ -101,19 +113,17 @@ export async function* readSse(
         break;
       }
       const { done, value } = await reader.read();
-      if (done) break;
+      if (done) {
+        buf += decoder.decode();
+        if (buf.trim()) {
+          yield* parseSseChunks(buf.split("\n\n"));
+        }
+        break;
+      }
       buf += decoder.decode(value, { stream: true });
       const chunks = buf.split("\n\n");
       buf = chunks.pop() || "";
-      for (const chunk of chunks) {
-        const line = chunk.split("\n").find((l) => l.startsWith("data: "));
-        if (!line) continue;
-        try {
-          yield JSON.parse(line.slice(6)) as HubEvent;
-        } catch {
-          /* skip malformed */
-        }
-      }
+      yield* parseSseChunks(chunks);
     }
   } finally {
     reader.releaseLock();

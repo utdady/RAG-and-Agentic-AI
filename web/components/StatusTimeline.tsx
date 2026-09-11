@@ -79,7 +79,7 @@ export function StatusTimeline({
     <details
       open={open}
       onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
-      className="rounded-[10px] border border-[var(--line)] bg-[var(--bg2)]"
+      className="w-full rounded-[10px] border border-[var(--line)] bg-[var(--bg2)]"
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 [&::-webkit-details-marker]:hidden">
         <div className="flex min-w-0 items-center gap-2.5">

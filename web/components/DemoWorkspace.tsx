@@ -230,12 +230,16 @@ export function DemoWorkspace({ demo }: Props) {
       },
     ]);
     let gotTokens = false;
+    let gotImages = false;
+    let gotError = false;
+    let sawDone = false;
     try {
       const healthy = await checkApiHealth();
       if (!healthy) {
         setError(
           "Can't load the demo\n\nThe demo hub isn't responding. Refresh the page and try again.",
         );
+        gotError = true;
         return;
       }
       setStatusSteps((s) =>
@@ -265,19 +269,39 @@ export function DemoWorkspace({ demo }: Props) {
       const res = await runDemo(demo.slug, form, controller.signal);
       try {
         for await (const ev of readSse(res, controller.signal)) {
-          if (ev.type === "token") gotTokens = true;
+          if (ev.type === "token" && ev.text) gotTokens = true;
+          if (ev.type === "image" && ev.data) gotImages = true;
+          if (ev.type === "error") gotError = true;
           applyEvent(ev);
-          if (ev.type === "done") break;
+          if (ev.type === "done") {
+            sawDone = true;
+            break;
+          }
+        }
+        if (
+          !controller.signal.aborted &&
+          !gotTokens &&
+          !gotImages &&
+          !gotError
+        ) {
+          setError(
+            formatFetchError(
+              new Error(sawDone ? "empty" : "truncated"),
+              "stream",
+            ),
+          );
+          gotError = true;
         }
       } catch (streamErr) {
-        if (!isAbortError(streamErr) && !gotTokens) {
+        if (!isAbortError(streamErr) && !gotTokens && !gotImages) {
           setError(formatFetchError(streamErr, "stream"));
+          gotError = true;
         }
         return;
       }
     } catch (e) {
       if (isAbortError(e)) {
-        if (!gotTokens) setError("Stopped.");
+        if (!gotTokens && !gotImages) setError("Stopped.");
       } else {
         setError(formatFetchError(e, "connect"));
       }
