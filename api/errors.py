@@ -134,7 +134,50 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
             code="connection",
         )
 
-    return something_wrong()
+    if isinstance(exc, MemoryError) or "memoryerror" in lower:
+        return UserFacingError(
+            title="Demo ran out of memory",
+            message=(
+                "This demo used too much memory on the server. "
+                "Try a shorter video, or run Summarize only (skip Ask/Q&A)."
+            ),
+            code="oom",
+        )
+
+    youtube_markers = (
+        "requestblocked",
+        "ipblocked",
+        "couldnotretrievetranscript",
+        "transcriptsdisabled",
+        "notranscriptfound",
+        "youtuberequestfailed",
+        "youtube-transcript",
+        "youtube_transcript",
+    )
+    if any(m in lower for m in youtube_markers) or (
+        "youtube" in lower and ("blocked" in lower or "transcript" in lower)
+    ):
+        return UserFacingError(
+            title="Couldn't fetch the transcript",
+            message=(
+                "YouTube blocked or has no English captions for this video from the demo server. "
+                "Try a different public video with captions."
+            ),
+            code="youtube_transcript",
+        )
+
+    snip = re.sub(r"\s+", " ", raw).strip()[:160]
+    detail = type(exc).__name__
+    if snip:
+        detail = f"{detail}: {snip}"
+    return UserFacingError(
+        title="Something went wrong",
+        message=(
+            "We couldn't complete your request. Please try again in a moment."
+            f"\n\n({detail})"
+        ),
+        code="unknown",
+    )
 
 
 def humanize_message(raw: str) -> UserFacingError:

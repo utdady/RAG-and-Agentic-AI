@@ -101,16 +101,35 @@ def run_youtube(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     if blocked:
         yield from blocked
         return
-    url = (payload.get("url") or payload.get("message") or "").strip()
+    url = (payload.get("url") or "").strip()
+    message = (payload.get("message") or "").strip()
     question = (payload.get("question") or "").strip()
-    yield thinking("Fetching transcript")
+    # Hub sends the URL in `url` and optional follow-up in `message`.
+    if not url and message.startswith(("http://", "https://")):
+        url, message = message, ""
+    if not question and message and not message.startswith(("http://", "https://")):
+        question = message
+    if not url:
+        yield from finish_text("Paste a YouTube URL first.")
+        return
+
+    yield thinking("Loading YouTube demo")
     prepare_app_import("YouTube Summarizer")
     from app import answer_question, summarize_video  # noqa: WPS433
 
-    if question:
-        yield thinking("Answering from transcript RAG")
-        text = answer_question(url, question)
-    else:
-        yield thinking("Summarizing transcript")
-        text = summarize_video(url)
+    from api.errors import humanize_exception
+    from api.events import done, error
+
+    try:
+        if question:
+            yield thinking("Fetching transcript + answering")
+            text = answer_question(url, question)
+        else:
+            yield thinking("Fetching transcript + summarizing")
+            text = summarize_video(url)
+    except Exception as exc:  # noqa: BLE001
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
+        return
     yield from finish_text(text)

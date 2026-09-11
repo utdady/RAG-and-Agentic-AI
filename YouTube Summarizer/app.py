@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Any
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from youtube_transcript_api import YouTubeTranscriptApi
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -40,6 +39,7 @@ VIDEO_ID_RE = re.compile(
     r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)"
     r"([a-zA-Z0-9_-]{11})"
 )
+VTT_TAG_RE = re.compile(r"<[^>]+>")
 
 summary_prompt = ChatPromptTemplate.from_template(
     """You are an AI assistant tasked with summarizing YouTube video transcripts.
@@ -79,17 +79,55 @@ def get_video_id(url: str) -> str | None:
     return match.group(1) if match else None
 
 
-def get_transcript(url: str):
-    video_id = get_video_id(url)
-    if not video_id:
-        return None
+def process(transcript) -> str:
+    """Join spoken lines into plain text (no timestamp chrome)."""
+    if not transcript:
+        return ""
+
+    parts: list[str] = []
+    for item in transcript:
+        try:
+            if isinstance(item, dict):
+                text = item.get("text")
+            else:
+                text = getattr(item, "text", None)
+            if not text:
+                continue
+            cleaned = str(text).replace("\n", " ").strip()
+            if cleaned:
+                parts.append(cleaned)
+        except (AttributeError, TypeError, KeyError):
+            continue
+    return " ".join(parts)
+
+
+def _vtt_to_text(vtt: str) -> str:
+    lines: list[str] = []
+    for raw in vtt.splitlines():
+        line = raw.strip()
+        if (
+            not line
+            or line.startswith("WEBVTT")
+            or line.startswith("NOTE")
+            or "-->" in line
+            or line.isdigit()
+        ):
+            continue
+        line = VTT_TAG_RE.sub("", line).strip()
+        if line and (not lines or lines[-1] != line):
+            lines.append(line)
+    return " ".join(lines)
+
+
+def _fetch_via_transcript_api(video_id: str):
+    from youtube_transcript_api import YouTubeTranscriptApi
 
     ytt_api = YouTubeTranscriptApi()
     transcripts = ytt_api.list(video_id)
 
     transcript = None
     for t in transcripts:
-        if t.language_code != "en":
+        if not str(getattr(t, "language_code", "")).startswith("en"):
             continue
         if t.is_generated:
             if transcript is None:
@@ -97,30 +135,105 @@ def get_transcript(url: str):
         else:
             transcript = t.fetch()
             break
-
     return transcript
 
 
-def process(transcript) -> str:
-    if not transcript:
+def _fetch_via_ytdlp(video_id: str) -> str:
+    """Fallback when youtube-transcript-api is blocked from cloud IPs."""
+    import requests
+    import yt_dlp
+
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "skip_download": True,
+        "extract_flat": False,
+    }
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+
+    candidates: list[dict[str, Any]] = []
+    for store_name in ("subtitles", "automatic_captions"):
+        store = info.get(store_name) or {}
+        for lang, formats in store.items():
+            if not str(lang).lower().startswith("en"):
+                continue
+            for fmt in formats or []:
+                if fmt.get("url") and fmt.get("ext") in {
+                    "vtt",
+                    "srv1",
+                    "srv2",
+                    "srv3",
+                    "ttml",
+                    "json3",
+                }:
+                    candidates.append(fmt)
+        if candidates:
+            break
+
+    if not candidates:
         return ""
 
-    lines: list[str] = []
-    # FetchedTranscript is iterable of snippets with .text / .start
-    for item in transcript:
-        try:
-            if isinstance(item, dict):
-                text = item.get("text")
-                start = item.get("start")
-            else:
-                text = getattr(item, "text", None)
-                start = getattr(item, "start", None)
-            if text is None:
-                continue
-            lines.append(f"Text: {text} Start: {start}")
-        except (AttributeError, TypeError, KeyError):
-            continue
-    return "\n".join(lines)
+    candidates.sort(key=lambda f: 0 if f.get("ext") == "vtt" else 1)
+    resp = requests.get(candidates[0]["url"], timeout=60)
+    resp.raise_for_status()
+    body = resp.text
+    if candidates[0].get("ext") == "json3":
+        return _json3_to_text(body)
+    return _vtt_to_text(body)
+
+
+def _json3_to_text(raw: str) -> str:
+    import json
+
+    data = json.loads(raw)
+    parts: list[str] = []
+    for ev in data.get("events") or []:
+        for seg in ev.get("segs") or []:
+            text = (seg.get("utf8") or "").replace("\n", " ").strip()
+            if text:
+                parts.append(text)
+    return " ".join(parts)
+
+
+def get_transcript_text(url: str) -> str:
+    """Return plain English transcript text, or raise a clear error."""
+    video_id = get_video_id(url)
+    if not video_id:
+        return ""
+
+    primary_err: Exception | None = None
+    try:
+        fetched = _fetch_via_transcript_api(video_id)
+        text = process(fetched)
+        if text.strip():
+            return text
+    except Exception as exc:  # noqa: BLE001
+        primary_err = exc
+
+    try:
+        text = _fetch_via_ytdlp(video_id)
+        if text.strip():
+            return text
+    except Exception as exc:  # noqa: BLE001
+        if primary_err is None:
+            primary_err = exc
+
+    if primary_err is not None:
+        raise primary_err
+    return ""
+
+
+def get_transcript(url: str):
+    """Back-compat: snippet list from the primary API only."""
+    video_id = get_video_id(url)
+    if not video_id:
+        return None
+    try:
+        return _fetch_via_transcript_api(video_id)
+    except Exception:
+        return None
 
 
 def chunk_transcript(
@@ -148,7 +261,7 @@ def _get_embeddings():
 
 
 def _ensure_processed(video_url: str) -> tuple[str | None, str]:
-    """Return (video_id, processed_transcript) or raise-friendly error message via empty id."""
+    """Return (video_id, processed_transcript) or error message via empty id."""
     video_id = get_video_id(video_url)
     if not video_id:
         return None, "Please provide a valid YouTube URL."
@@ -157,8 +270,7 @@ def _ensure_processed(video_url: str) -> tuple[str | None, str]:
     if cached and cached.get("processed"):
         return video_id, cached["processed"]
 
-    fetched = get_transcript(video_url)
-    processed = process(fetched)
+    processed = get_transcript_text(video_url)
     if not processed:
         return video_id, ""
 
