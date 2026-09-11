@@ -231,13 +231,13 @@ export const DEMOS: Demo[] = [
   {
     slug: "icebreaker",
     title: "Icebreaker Bot",
-    tagline: "Chat with a mock LinkedIn profile (RAG).",
+    tagline: "Practice outreach from a LinkedIn-style profile.",
     description:
-      "Loads a mock professional profile into memory, then lets you practice outreach. Ask for icebreakers, talking points, or questions tailored to that person's background.",
+      "Cascade: ProxyCurl LinkedIn URL (if API key is set) → pasted profile text → bundled mock sample. Ask for icebreakers, talking points, or questions tailored to that person's background.",
     tips: [
-      "First run loads the profile — ask a concrete question on the next message if the first reply is just setup.",
+      "Paste a LinkedIn URL only if the API has PROXYCURL_API_KEY; otherwise paste About/Experience text or leave blank for the mock profile.",
+      "First run loads the profile — ask a concrete question next if the first reply is just setup facts.",
       "Ask for icebreakers, email openers, or talking points for a specific role or industry angle.",
-      "Request shorter or more formal versions if you want to tune the tone.",
     ],
     phase: 2,
     kind: "chat",

@@ -120,6 +120,7 @@ export function DemoWorkspace({ demo }: Props) {
   const [mode, setMode] = useState("symptoms");
   const [workflow, setWorkflow] = useState("recipe");
   const [url, setUrl] = useState("");
+  const [profileText, setProfileText] = useState("");
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [draftNonce, setDraftNonce] = useState(0);
@@ -219,6 +220,12 @@ export function DemoWorkspace({ demo }: Props) {
     if (trimmed) return true;
     if (needsFile && hasFiles()) return true;
     if (demo.kind === "youtube" && url.trim()) return true;
+    if (
+      demo.slug === "icebreaker" &&
+      (url.trim() || profileText.trim())
+    ) {
+      return true;
+    }
     return false;
   }
 
@@ -231,6 +238,15 @@ export function DemoWorkspace({ demo }: Props) {
       return names.length ? `Uploaded: ${names.join(", ")}` : "Uploaded file";
     }
     if (demo.kind === "youtube" && url.trim()) return url.trim();
+    if (demo.slug === "icebreaker") {
+      if (url.trim()) return url.trim();
+      if (profileText.trim()) {
+        const preview = profileText.trim().replace(/\s+/g, " ").slice(0, 72);
+        return preview.length < profileText.trim().length
+          ? `Pasted profile: ${preview}…`
+          : `Pasted profile: ${preview}`;
+      }
+    }
     return "";
   }
 
@@ -314,6 +330,10 @@ export function DemoWorkspace({ demo }: Props) {
       form.set("message", message);
       const ytUrl = url || (message.startsWith("http") ? message : "");
       if (ytUrl) form.set("url", ytUrl);
+      if (demo.slug === "icebreaker") {
+        if (url.trim()) form.set("url", url.trim());
+        if (profileText.trim()) form.set("profile_text", profileText.trim());
+      }
       form.set("mode", mode);
       form.set("workflow", workflow);
       if (extra) {
@@ -389,6 +409,24 @@ export function DemoWorkspace({ demo }: Props) {
           className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm outline-none"
         />
       ) : null}
+      {demo.slug === "icebreaker" ? (
+        <div className="space-y-2">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="LinkedIn URL (optional — needs PROXYCURL_API_KEY on API)"
+            className="w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm outline-none"
+            autoComplete="off"
+          />
+          <textarea
+            value={profileText}
+            onChange={(e) => setProfileText(e.target.value)}
+            placeholder="Or paste profile text / JSON (fallback if ProxyCurl fails)"
+            rows={4}
+            className="w-full resize-y rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm outline-none"
+          />
+        </div>
+      ) : null}
       {demo.kind === "healthcare" ? (
         <select
           value={mode}
@@ -425,7 +463,8 @@ export function DemoWorkspace({ demo }: Props) {
   const hasExtraFields =
     demo.kind === "youtube" ||
     demo.kind === "healthcare" ||
-    demo.slug === "nourishbot";
+    demo.slug === "nourishbot" ||
+    demo.slug === "icebreaker";
 
   const showTimeline = busy || statusSteps.length > 0;
 

@@ -67,7 +67,7 @@ DEMOS = [
     {
         "slug": "icebreaker",
         "title": "Icebreaker Bot",
-        "tagline": "Chat with a mock LinkedIn profile (RAG).",
+        "tagline": "Practice outreach from a LinkedIn-style profile.",
         "phase": 2,
         "kind": "chat",
         "github": "Icebreaker%20Bot",

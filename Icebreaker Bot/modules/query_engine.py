@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Any
+from typing import Any, Union
 
 from llama_index.core import PromptTemplate, VectorStoreIndex
 
@@ -12,10 +13,37 @@ import config
 
 logger = logging.getLogger(__name__)
 
+ProfileIndex = Union[VectorStoreIndex, "TextProfileIndex"]
 
-def generate_initial_facts(index: VectorStoreIndex) -> str:
+
+class TextProfileIndex:
+    """Lightweight profile context without MiniLM embeddings (hub-safe)."""
+
+    def __init__(self, profile_data: dict[str, Any], max_chars: int = 14000):
+        self.context = json.dumps(profile_data, indent=2, ensure_ascii=False)[
+            :max_chars
+        ]
+
+
+def _complete(prompt: str) -> str:
+    llm = create_llm(temperature=0.0)
+    resp = llm.complete(prompt)
+    return (getattr(resp, "text", None) or str(resp)).strip()
+
+
+def generate_initial_facts(index: ProfileIndex) -> str:
     """List 3 interesting career/education facts grounded in the profile."""
     try:
+        if isinstance(index, TextProfileIndex):
+            prompt = (
+                "You are an AI assistant that provides detailed answers based on "
+                "the provided LinkedIn profile context.\n\n"
+                f"Context:\n{index.context}\n\n"
+                "List 3 interesting facts about this person's career or education. "
+                "Use only the information provided."
+            )
+            return _complete(prompt) or "Failed to generate initial facts."
+
         llm = create_llm(temperature=0.0)
         facts_prompt = PromptTemplate(template=config.INITIAL_FACTS_TEMPLATE)
         query_engine = index.as_query_engine(
@@ -33,9 +61,25 @@ def generate_initial_facts(index: VectorStoreIndex) -> str:
         return "Failed to generate initial facts."
 
 
-def answer_user_query(index: VectorStoreIndex, user_query: str) -> Any:
+def answer_user_query(index: ProfileIndex, user_query: str) -> Any:
     """Answer a user question using only retrieved LinkedIn context."""
     try:
+        if isinstance(index, TextProfileIndex):
+            prompt = (
+                "You are an AI assistant that answers questions using only the "
+                "LinkedIn profile context below. If the answer is not available, "
+                'say "I don\'t know. The information is not available on the '
+                'LinkedIn page."\n\n'
+                f"Context:\n{index.context}\n\n"
+                f"Question: {user_query}\n\nAnswer:"
+            )
+            text = _complete(prompt) or "Failed to get an answer."
+
+            class _Ok:
+                response = text
+
+            return _Ok()
+
         llm = create_llm(temperature=0.0)
         question_prompt = PromptTemplate(template=config.USER_QUESTION_TEMPLATE)
         query_engine = index.as_query_engine(

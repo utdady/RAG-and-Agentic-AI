@@ -8,6 +8,7 @@ from api.bootstrap import add_app, prepare_app_import, prepare_demo_import
 from api.events import context, task, thinking
 
 _ice_sid: str | None = None
+_ice_key: str | None = None
 _food_items: list[dict[str, Any]] | None = None
 _food_collection = None
 
@@ -298,24 +299,53 @@ def run_icebreaker(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         yield from blocked
         return
     question = (payload.get("message") or "").strip()
-    yield thinking("Loading mock LinkedIn profile")
+    url = (payload.get("url") or "").strip()
+    if not url and question.lower().startswith("http") and "linkedin.com" in question.lower():
+        url, question = question, ""
+    profile_text = (payload.get("profile_text") or "").strip()
+    profile_key = f"{url}|{profile_text}"
+
     prepare_app_import("Icebreaker Bot", chdir=True)
-    global _ice_sid
-    from app import active_indices, chat_with_profile, process_profile  # noqa: WPS433
+    global _ice_sid, _ice_key
+    from app import (  # noqa: WPS433
+        active_indices,
+        active_profile_sources,
+        chat_with_profile,
+        process_profile,
+    )
     from modules.llm_interface import available_models  # noqa: WPS433
 
     models = available_models()
     model = models[0] if models else ""
-    if not _ice_sid or _ice_sid not in active_indices:
-        facts, new_id = process_profile("", None, True, model)
+    lightweight = not hub_heavy_retrieval()
+
+    if not _ice_sid or _ice_sid not in active_indices or _ice_key != profile_key:
+        yield thinking("Resolving profile (ProxyCurl → paste → mock)")
+        facts, new_id = process_profile(
+            url,
+            None,
+            False,
+            model,
+            profile_text,
+            cascade=True,
+            lightweight=lightweight,
+        )
         if not new_id:
             yield from finish_text(str(facts))
             return
         _ice_sid = new_id
-        yield context("Profile facts", str(facts)[:600], "mock LinkedIn JSON")
+        _ice_key = profile_key
+        source = active_profile_sources.get(new_id, "mock")
+        source_label = {
+            "proxycurl": "ProxyCurl LinkedIn",
+            "pasted": "pasted profile text",
+            "mock": "mock LinkedIn JSON",
+        }.get(source, source)
+        yield context("Profile facts", str(facts)[:600], source_label)
         if not question:
             yield from finish_text(str(facts))
             return
+
     history = chat_with_profile(_ice_sid, question, [])
     answer = history[-1][1] if history else ""
     yield from finish_text(str(answer))

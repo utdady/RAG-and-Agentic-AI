@@ -20,14 +20,18 @@ from shared.env_load import load_env
 
 load_env(HERE)
 import config
-from modules.data_extraction import extract_linkedin_profile
+from modules.data_extraction import extract_linkedin_profile, resolve_profile
 from modules.data_processing import (
     create_vector_database,
     split_profile_data,
     verify_embeddings,
 )
 from modules.llm_interface import available_models, change_llm_model
-from modules.query_engine import answer_user_query, generate_initial_facts
+from modules.query_engine import (
+    TextProfileIndex,
+    answer_user_query,
+    generate_initial_facts,
+)
 from shared.llama_index_llm import describe_llama_index_llm
 
 logging.basicConfig(
@@ -38,36 +42,61 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 active_indices: dict[str, object] = {}
+active_profile_sources: dict[str, str] = {}
 
 
-def process_profile(linkedin_url, api_key, use_mock, selected_model):
+def process_profile(
+    linkedin_url,
+    api_key,
+    use_mock,
+    selected_model,
+    pasted_text="",
+    cascade=False,
+    lightweight=False,
+):
     try:
         change_llm_model(selected_model)
-        if use_mock and not linkedin_url:
-            linkedin_url = config.DEFAULT_MOCK_URL
+        source = "mock"
+        if cascade:
+            profile_data, source = resolve_profile(
+                linkedin_url or "",
+                api_key,
+                pasted_text or "",
+            )
+        else:
+            if use_mock and not linkedin_url:
+                linkedin_url = config.DEFAULT_MOCK_URL
+            profile_data = extract_linkedin_profile(
+                linkedin_url or config.DEFAULT_MOCK_URL,
+                api_key if not use_mock else None,
+                mock=bool(use_mock),
+            )
+            source = "mock" if use_mock else "proxycurl"
 
-        profile_data = extract_linkedin_profile(
-            linkedin_url or config.DEFAULT_MOCK_URL,
-            api_key if not use_mock else None,
-            mock=bool(use_mock),
-        )
         if not profile_data:
-            return "Failed to retrieve profile data. Check the URL, API key, or use mock mode.", None
+            return (
+                "Failed to retrieve profile data. "
+                "Try a LinkedIn URL + PROXYCURL_API_KEY, paste profile text, or use mock.",
+                None,
+            )
 
-        nodes = split_profile_data(profile_data)
-        if not nodes:
-            return "Failed to process profile data into nodes.", None
+        if lightweight:
+            index = TextProfileIndex(profile_data)
+        else:
+            nodes = split_profile_data(profile_data)
+            if not nodes:
+                return "Failed to process profile data into nodes.", None
+            index = create_vector_database(nodes)
+            if not index:
+                return "Failed to create vector database.", None
+            verify_embeddings(index)
 
-        index = create_vector_database(nodes)
-        if not index:
-            return "Failed to create vector database.", None
-
-        verify_embeddings(index)
         facts = generate_initial_facts(index)
         session_id = str(uuid.uuid4())
         active_indices[session_id] = index
+        active_profile_sources[session_id] = source
         return (
-            f"Profile processed successfully!\n\n"
+            f"Profile processed successfully ({source})!\n\n"
             f"Here are 3 interesting facts about this person:\n\n{facts}",
             session_id,
         )
