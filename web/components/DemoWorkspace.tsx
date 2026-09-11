@@ -84,6 +84,7 @@ export function DemoWorkspace({ demo }: Props) {
   const turnId = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
   const startedAt = useRef<number | null>(null);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState("");
   const [history, setHistory] = useState<Turn[]>([]);
@@ -108,6 +109,11 @@ export function DemoWorkspace({ demo }: Props) {
     }, 1000);
     return () => window.clearInterval(id);
   }, [busy]);
+
+  useEffect(() => {
+    if (!userMessage && !busy && !text) return;
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [userMessage, busy, text, error, statusSteps.length]);
 
   function resetAssistant() {
     setStatusSteps([]);
@@ -335,103 +341,109 @@ export function DemoWorkspace({ demo }: Props) {
   const showTimeline = busy || statusSteps.length > 0;
 
   return (
-    <div className="flex h-full min-h-[calc(100dvh-3.5rem)] flex-col text-left lg:min-h-screen">
-      <header className="shrink-0 space-y-3 px-6 pt-6 lg:px-10 lg:pt-10">
-        <h2 className="font-display text-2xl font-bold">{demo.title}</h2>
-        <p className="text-sm text-[var(--txt2)]">{demo.tagline}</p>
-        {demo.description ? (
-          <p className="max-w-2xl text-sm leading-relaxed text-[var(--txt2)]/90">
-            {demo.description}
-          </p>
-        ) : null}
-        {demo.tips?.length ? (
-          <div className="max-w-2xl space-y-1.5">
-            <p className="text-xs font-medium uppercase tracking-wide text-[var(--txt2)]">
-              How to get good results
+    <div className="flex h-full min-h-0 flex-1 flex-col text-left lg:min-h-0">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-6 lg:px-10 lg:pt-10">
+        <header className="mb-6 max-w-3xl space-y-3">
+          <h2 className="font-display text-2xl font-bold">{demo.title}</h2>
+          <p className="text-sm text-[var(--txt2)]">{demo.tagline}</p>
+          {demo.description ? (
+            <p className="text-sm leading-relaxed text-[var(--txt2)]/90">
+              {demo.description}
             </p>
-            <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed text-[var(--txt2)]/90">
-              {demo.tips.map((tip) => (
-                <li key={tip}>{tip}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        <div className="flex flex-wrap gap-2">
-          {demo.tags.map((t) => (
-            <span
-              key={t}
-              className="rounded-md border border-[var(--line)] px-2 py-0.5 font-mono text-[11px] text-accent"
+          ) : null}
+          {demo.tips?.length ? (
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--txt2)]">
+                How to get good results
+              </p>
+              <ul className="list-disc space-y-1 pl-4 text-sm leading-relaxed text-[var(--txt2)]/90">
+                {demo.tips.map((tip) => (
+                  <li key={tip}>{tip}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            {demo.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded-md border border-[var(--line)] px-2 py-0.5 font-mono text-[11px] text-accent"
+              >
+                {t}
+              </span>
+            ))}
+            <a
+              className="text-sm text-[var(--txt2)] underline decoration-[var(--line)] hover:text-accent"
+              href={`${GITHUB_BASE}/${demo.github}`}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              {t}
-            </span>
-          ))}
-          <a
-            className="text-sm text-[var(--txt2)] underline decoration-[var(--line)] hover:text-accent"
-            href={`${GITHUB_BASE}/${demo.github}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Source
-          </a>
-        </div>
-        {demo.kind === "healthcare" ? (
-          <p className="rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">
-            Educational demo only — not medical or mental-health care.
-          </p>
-        ) : null}
+              Source
+            </a>
+          </div>
+          {demo.kind === "healthcare" ? (
+            <p className="rounded-lg border border-[var(--warn)]/40 bg-[var(--warn)]/10 px-3 py-2 text-sm text-[var(--warn)]">
+              Educational demo only — not medical or mental-health care.
+            </p>
+          ) : null}
+        </header>
+
         {demo.guide ? (
-          <DatasetGuide
-            blurb={demo.guide.blurb}
-            tables={demo.guide.tables}
-            starters={demo.guide.starters}
-            busy={busy}
-            onStarter={(prompt) => {
-              void submit(prompt);
-            }}
-          />
-        ) : null}
-      </header>
-
-      <div className="mt-6 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 lg:px-10">
-        {history.map((turn) => (
-          <div key={turn.id} className="space-y-4">
-            <UserBubble text={turn.user} />
-            <AssistantBubble text={turn.text} error={turn.error} />
-            {turn.images.map((src, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={`${turn.id}-img-${i}`}
-                src={src}
-                alt="Demo output"
-                className="max-h-80 rounded-xl border border-[var(--line)]"
-              />
-            ))}
-          </div>
-        ))}
-
-        {userMessage ? (
-          <div className="space-y-4">
-            <UserBubble text={userMessage} />
-            {showTimeline ? (
-              <StatusTimeline
-                steps={statusSteps}
-                busy={busy && !text && !images.length && !error}
-                elapsed={elapsed || undefined}
-              />
-            ) : null}
-            <ContextCards items={contexts} />
-            <AssistantBubble text={text} error={error || undefined} />
-            {images.map((src, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={`current-img-${i}`}
-                src={src}
-                alt="Demo output"
-                className="max-h-80 rounded-xl border border-[var(--line)]"
-              />
-            ))}
+          <div className="mb-6 max-w-3xl">
+            <DatasetGuide
+              blurb={demo.guide.blurb}
+              tables={demo.guide.tables}
+              starters={demo.guide.starters}
+              busy={busy}
+              onStarter={(prompt) => {
+                void submit(prompt);
+              }}
+            />
           </div>
         ) : null}
+
+        <div className="flex max-w-3xl flex-col gap-4 pb-6">
+          {history.map((turn) => (
+            <div key={turn.id} className="space-y-4">
+              <UserBubble text={turn.user} />
+              <AssistantBubble text={turn.text} error={turn.error} />
+              {turn.images.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`${turn.id}-img-${i}`}
+                  src={src}
+                  alt="Demo output"
+                  className="max-h-80 rounded-xl border border-[var(--line)]"
+                />
+              ))}
+            </div>
+          ))}
+
+          {userMessage ? (
+            <div className="space-y-4">
+              <UserBubble text={userMessage} />
+              {showTimeline ? (
+                <StatusTimeline
+                  steps={statusSteps}
+                  busy={busy && !text && !images.length && !error}
+                  elapsed={elapsed || undefined}
+                />
+              ) : null}
+              <ContextCards items={contexts} />
+              <AssistantBubble text={text} error={error || undefined} />
+              {images.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`current-img-${i}`}
+                  src={src}
+                  alt="Demo output"
+                  className="max-h-80 rounded-xl border border-[var(--line)]"
+                />
+              ))}
+            </div>
+          ) : null}
+          <div ref={chatEndRef} />
+        </div>
       </div>
 
       <div className="shrink-0 border-t border-[var(--line)] bg-[var(--bg)] px-6 py-4 lg:px-10">

@@ -33,6 +33,9 @@ def run_sql_agent(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         yield from blocked
         return
     question = (payload.get("message") or "").strip()
+    if not question:
+        yield from finish_text("Ask a question about the Chinook music store database.")
+        return
     yield thinking("Loading Chinook SQLite")
     add_app("Natural Language SQL Agent")
     from download_data import main as download_chinook  # noqa: WPS433
@@ -40,10 +43,18 @@ def run_sql_agent(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     download_chinook()
     from agent import run_query  # noqa: WPS433
 
+    yield thinking("Translating your question to SQL")
     yield tool("sql_agent", "running")
-    answer = run_query(question)
+    try:
+        answer = run_query(question)
+    except Exception as exc:  # noqa: BLE001
+        yield tool("sql_agent", "failed")
+        yield from finish_text(
+            f"The SQL agent hit an error: {exc}\n\nTry a simpler question, or retry in a moment."
+        )
+        return
     yield tool("sql_agent", "done")
-    yield from finish_text(answer)
+    yield from finish_text(answer or "No answer returned. Try rephrasing the question.")
 
 
 def run_math_assistant(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:

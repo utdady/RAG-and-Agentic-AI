@@ -31,7 +31,7 @@ export function DatasetGuide({
             {tables.length} tables
           </span>
         </summary>
-        <ul className="space-y-2.5 border-t border-[var(--line)] px-3 py-3">
+        <ul className="max-h-48 space-y-2.5 overflow-y-auto overscroll-contain border-t border-[var(--line)] px-3 py-3">
           {tables.map((table) => (
             <li key={table.name}>
               <p className="font-mono text-[12.5px] text-accent">{table.name}</p>

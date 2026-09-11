@@ -116,7 +116,7 @@ export function DemoShell({
       </aside>
 
       <Sidebar active={active} />
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:h-screen lg:overflow-hidden">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:h-screen">
         <ApiStatusBanner />
         {children}
       </main>
