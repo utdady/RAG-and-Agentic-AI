@@ -211,7 +211,12 @@ export function DemoWorkspace({ demo }: Props) {
   }
 
   function canSubmitMessage(message: string) {
-    if (message.trim()) return true;
+    const trimmed = message.trim();
+    // Doc / PDF demos need both an attachment and a real question.
+    if (demo.kind === "docs" || demo.kind === "pdf") {
+      return hasFiles() && trimmed.length > 0;
+    }
+    if (trimmed) return true;
     if (needsFile && hasFiles()) return true;
     if (demo.kind === "youtube" && url.trim()) return true;
     return false;

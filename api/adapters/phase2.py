@@ -99,61 +99,99 @@ def run_docchat(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     if not files:
         yield from finish_text("Upload one or more documents first.")
         return
+    if not question:
+        yield from finish_text(
+            "Ask a question about your documents (upload alone is not enough)."
+        )
+        return
+
+    from api.errors import humanize_exception
+    from api.events import done, error
+    from langchain_community.retrievers import BM25Retriever
+
     prepare_demo_import("DocChat", chdir=True)
     import importlib
 
-    workflow_mod = importlib.import_module("agents.workflow")
-    AgentWorkflow = workflow_mod.AgentWorkflow
-    DocumentProcessor = importlib.import_module("document_processor.file_handler").DocumentProcessor
-    RetrieverBuilder = importlib.import_module("retriever.builder").RetrieverBuilder
+    try:
+        workflow_mod = importlib.import_module("agents.workflow")
+        AgentWorkflow = workflow_mod.AgentWorkflow
+        DocumentProcessor = importlib.import_module(
+            "document_processor.file_handler"
+        ).DocumentProcessor
+    except Exception as exc:  # noqa: BLE001
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
+        return
 
     yield thinking("Processing uploaded documents")
     yield task("index", "Document indexer", "running")
-    processor = DocumentProcessor()
-    chunks = processor.process(files)
-    retriever = RetrieverBuilder().build_hybrid_retriever(chunks)
-    yield task("index", "Document indexer", "completed")
+    try:
+        processor = DocumentProcessor()
+        chunks = processor.process(files)
+        if not chunks:
+            yield task("index", "Document indexer", "failed")
+            yield from finish_text(
+                "Couldn't extract text from the upload. Try a text-based PDF, DOCX, TXT, or MD file."
+            )
+            return
+        # BM25-only on the hub: MiniLM + Chroma OOMs free/small Render instances.
+        retriever = BM25Retriever.from_documents(chunks)
+        retriever.k = 6
+        yield task("index", "Document indexer", "completed")
+    except Exception as exc:  # noqa: BLE001
+        yield task("index", "Document indexer", "failed")
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
+        return
 
-    yield thinking("Building hybrid retriever")
-    workflow = AgentWorkflow()
-    documents = retriever.invoke(question)
+    try:
+        yield thinking("Building research workflow")
+        workflow = AgentWorkflow()
+        documents = retriever.invoke(question)
 
-    state = {
-        "question": question,
-        "documents": documents,
-        "draft_answer": "",
-        "verification_report": "",
-        "is_relevant": False,
-        "retriever": retriever,
-        "research_loops": 0,
-    }
+        state = {
+            "question": question,
+            "documents": documents,
+            "draft_answer": "",
+            "verification_report": "",
+            "is_relevant": False,
+            "retriever": retriever,
+            "research_loops": 0,
+        }
 
-    yield thinking("Checking question relevance")
-    yield task("relevance", "Relevance check", "running")
-    state.update(workflow._check_relevance_step(state))
-    yield task("relevance", "Relevance check", "completed")
+        yield thinking("Checking question relevance")
+        yield task("relevance", "Relevance check", "running")
+        state.update(workflow._check_relevance_step(state))
+        yield task("relevance", "Relevance check", "completed")
 
-    if not state["is_relevant"]:
-        answer = state.get("draft_answer") or ""
-        report = state.get("verification_report") or ""
-    else:
-        while True:
-            yield thinking("Researching documents")
-            yield task("research", "Research agent", "running")
-            state.update(workflow._research_step(state))
-            yield task("research", "Research agent", "completed")
+        if not state["is_relevant"]:
+            answer = state.get("draft_answer") or ""
+            report = state.get("verification_report") or ""
+        else:
+            while True:
+                yield thinking("Researching documents")
+                yield task("research", "Research agent", "running")
+                state.update(workflow._research_step(state))
+                yield task("research", "Research agent", "completed")
 
-            yield thinking("Verifying answer")
-            yield task("verify", "Verification", "running")
-            state.update(workflow._verification_step(state))
-            yield task("verify", "Verification", "completed")
+                yield thinking("Verifying answer")
+                yield task("verify", "Verification", "running")
+                state.update(workflow._verification_step(state))
+                yield task("verify", "Verification", "completed")
 
-            if workflow._decide_next_step(state) != "re_research":
-                break
-            yield thinking("Refining research")
+                if workflow._decide_next_step(state) != "re_research":
+                    break
+                yield thinking("Refining research")
 
-        answer = state.get("draft_answer") or ""
-        report = state.get("verification_report") or ""
+            answer = state.get("draft_answer") or ""
+            report = state.get("verification_report") or ""
+    except Exception as exc:  # noqa: BLE001
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
+        return
 
     extras = []
     if report:
@@ -165,7 +203,10 @@ def run_docchat(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
                 "source": "DocChat verifier",
             }
         )
-    yield from finish_text(answer, extras)
+    yield from finish_text(
+        answer or "I couldn't produce an answer from these documents. Try a more specific question.",
+        extras,
+    )
 
 
 def run_food_search(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
