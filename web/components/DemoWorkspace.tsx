@@ -1,16 +1,28 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Demo } from "@/lib/demos";
 import { GITHUB_BASE } from "@/lib/demos";
-import { checkApiHealth, formatFetchError, hubEventError, isAbortError, readSse, runDemo, type HubEvent } from "@/lib/sse";
+import {
+  checkApiHealth,
+  formatFetchError,
+  hubEventError,
+  isAbortError,
+  readSse,
+  runDemo,
+  type HubEvent,
+} from "@/lib/sse";
 import { ContextCards, type ContextItem } from "./ContextCards";
-import { LoadingState } from "./LoadingState";
 import { PromptBar } from "./PromptBar";
 import { StreamingText } from "./StreamingText";
-import { TaskRows, type TaskItem } from "./TaskRows";
-import { ThinkingTrace } from "./Thinking";
-import { ToolChips, type ToolItem } from "./ToolChips";
+import {
+  StatusTimeline,
+  appendThinkingStep,
+  finalizeStatusSteps,
+  upsertTaskStep,
+  upsertToolStep,
+  type StatusStep,
+} from "./StatusTimeline";
 
 type Props = { demo: Demo };
 
@@ -21,6 +33,14 @@ type Turn = {
   images: string[];
   error?: string;
 };
+
+function formatElapsed(ms: number) {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}m ${s}s`;
+}
 
 function UserBubble({ text }: { text: string }) {
   return (
@@ -62,13 +82,13 @@ export function DemoWorkspace({ demo }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const turnId = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+  const startedAt = useRef<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [elapsed, setElapsed] = useState("");
   const [history, setHistory] = useState<Turn[]>([]);
   const [userMessage, setUserMessage] = useState("");
-  const [thinking, setThinking] = useState<string[]>([]);
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
   const [contexts, setContexts] = useState<ContextItem[]>([]);
-  const [tools, setTools] = useState<ToolItem[]>([]);
   const [text, setText] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [error, setError] = useState("");
@@ -77,13 +97,24 @@ export function DemoWorkspace({ demo }: Props) {
   const [url, setUrl] = useState("");
   const [fileNames, setFileNames] = useState<string[]>([]);
 
+  useEffect(() => {
+    if (!busy) return;
+    startedAt.current = Date.now();
+    setElapsed("0s");
+    const id = window.setInterval(() => {
+      if (!startedAt.current) return;
+      setElapsed(formatElapsed(Date.now() - startedAt.current));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [busy]);
+
   function resetAssistant() {
-    setThinking([]);
-    setTasks([]);
+    setStatusSteps([]);
     setContexts([]);
-    setTools([]);
     setText("");
     setImages([]);
+    setElapsed("");
+    startedAt.current = null;
   }
 
   function archiveTurn() {
@@ -101,39 +132,30 @@ export function DemoWorkspace({ demo }: Props) {
     ]);
   }
 
-  function clearProgress() {
-    setThinking([]);
-    setTasks([]);
-    setTools([]);
-  }
-
   function applyEvent(ev: HubEvent) {
     if (ev.type === "thinking" && ev.label) {
-      setThinking((s) => [...s, ev.label!]);
+      setStatusSteps((s) => appendThinkingStep(s, ev.label!));
     } else if (ev.type === "task" && ev.id && ev.name) {
-      setTasks((prev) => {
-        const rest = prev.filter((t) => t.id !== ev.id);
-        return [...rest, { id: ev.id!, name: ev.name!, status: ev.status || "running" }];
-      });
+      setStatusSteps((s) => upsertTaskStep(s, ev.id!, ev.name!, ev.status));
     } else if (ev.type === "context" && ev.title && ev.snippet) {
       setContexts((c) => [
         ...c,
         { title: ev.title!, snippet: ev.snippet!, source: ev.source },
       ]);
     } else if (ev.type === "tool" && ev.name) {
-      setTools((t) => [...t, { name: ev.name!, status: ev.status }]);
+      setStatusSteps((s) => upsertToolStep(s, ev.name!, ev.status));
     } else if (ev.type === "token" && ev.text) {
-      clearProgress();
+      setStatusSteps((s) => finalizeStatusSteps(s));
       setText((s) => s + ev.text);
     } else if (ev.type === "image" && ev.data) {
-      clearProgress();
+      setStatusSteps((s) => finalizeStatusSteps(s));
       const mime = ev.mime || "image/png";
       setImages((imgs) => [...imgs, `data:${mime};base64,${ev.data}`]);
     } else if (ev.type === "error") {
-      clearProgress();
+      setStatusSteps((s) => finalizeStatusSteps(s));
       setError(hubEventError(ev));
     } else if (ev.type === "done") {
-      clearProgress();
+      setStatusSteps((s) => finalizeStatusSteps(s));
     }
   }
 
@@ -192,6 +214,14 @@ export function DemoWorkspace({ demo }: Props) {
     resetAssistant();
     setError("");
     setBusy(true);
+    setStatusSteps([
+      {
+        key: "status-start",
+        kind: "status",
+        label: "Starting demo…",
+        status: "running",
+      },
+    ]);
     let gotTokens = false;
     try {
       const healthy = await checkApiHealth();
@@ -201,6 +231,17 @@ export function DemoWorkspace({ demo }: Props) {
         );
         return;
       }
+      setStatusSteps((s) =>
+        s.map((step) =>
+          step.key === "status-start"
+            ? {
+                ...step,
+                label: "Connected — running pipeline",
+                status: "done",
+              }
+            : step,
+        ),
+      );
       const form = new FormData();
       form.set("message", message);
       const ytUrl = url || (message.startsWith("http") ? message : "");
@@ -234,7 +275,7 @@ export function DemoWorkspace({ demo }: Props) {
         setError(formatFetchError(e, "connect"));
       }
     } finally {
-      clearProgress();
+      setStatusSteps((s) => finalizeStatusSteps(s));
       setBusy(false);
       if (abortRef.current === controller) {
         abortRef.current = null;
@@ -290,10 +331,12 @@ export function DemoWorkspace({ demo }: Props) {
     demo.kind === "healthcare" ||
     demo.slug === "nourishbot";
 
+  const showTimeline = busy || statusSteps.length > 0;
+
   return (
     <div className="flex h-full min-h-[calc(100dvh-3.5rem)] flex-col text-left lg:min-h-screen">
       <header className="shrink-0 space-y-3 px-6 pt-6 lg:px-10 lg:pt-10">
-        <h2 className="text-2xl font-semibold">{demo.title}</h2>
+        <h2 className="font-display text-2xl font-bold">{demo.title}</h2>
         <p className="text-sm text-[var(--txt2)]">{demo.tagline}</p>
         {demo.description ? (
           <p className="max-w-2xl text-sm leading-relaxed text-[var(--txt2)]/90">
@@ -357,13 +400,12 @@ export function DemoWorkspace({ demo }: Props) {
         {userMessage ? (
           <div className="space-y-4">
             <UserBubble text={userMessage} />
-            {busy && !text && !images.length ? (
-              <>
-                <LoadingState thinking />
-                <ThinkingTrace steps={thinking} />
-                <TaskRows tasks={tasks} />
-                <ToolChips tools={tools} />
-              </>
+            {showTimeline ? (
+              <StatusTimeline
+                steps={statusSteps}
+                busy={busy && !text && !images.length && !error}
+                elapsed={elapsed || undefined}
+              />
             ) : null}
             <ContextCards items={contexts} />
             <AssistantBubble text={text} error={error || undefined} />
@@ -431,7 +473,7 @@ export function DemoWorkspace({ demo }: Props) {
           </form>
         ) : (
           <PromptBar
-            placeholder="Write a message…"
+            placeholder={demo.placeholder || "Write a message…"}
             busy={busy}
             extra={hasExtraFields ? extraFields : undefined}
             attachment={
