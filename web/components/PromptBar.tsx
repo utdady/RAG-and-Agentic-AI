@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, type FormEvent, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useRef,
+  type FormEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 function AttachIcon() {
   return (
@@ -21,6 +27,71 @@ function AttachIcon() {
       />
     </svg>
   );
+}
+
+function FileTypeIcon({ ext }: { ext: string }) {
+  const label = ext.toUpperCase().slice(0, 4) || "FILE";
+  const isPdf = ext === "pdf";
+  return (
+    <span
+      className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md text-[9px] font-bold leading-none tracking-wide ${
+        isPdf
+          ? "bg-[#e84a4a] text-white"
+          : "bg-[var(--bg)] text-[var(--txt2)] ring-1 ring-[var(--line)]"
+      }`}
+      aria-hidden
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        className="mb-0.5"
+      >
+        <path
+          d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14 2v6h6"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {label}
+    </span>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function fileExt(name: string) {
+  const i = name.lastIndexOf(".");
+  if (i < 0) return "";
+  return name.slice(i + 1).toLowerCase();
+}
+
+function displayType(ext: string) {
+  if (!ext) return "File";
+  return ext.toUpperCase();
 }
 
 export type AttachmentProps = {
@@ -78,9 +149,53 @@ export function PromptBar({
     input.value = "";
   }
 
+  function removeAttachment(index: number) {
+    if (!attachment) return;
+    const fileInput = attachment.inputRef.current;
+    if (!fileInput?.files) return;
+    const dt = new DataTransfer();
+    Array.from(fileInput.files).forEach((file, i) => {
+      if (i !== index) dt.items.add(file);
+    });
+    fileInput.files = dt.files;
+    attachment.onFilesChange();
+  }
+
   return (
     <form onSubmit={handle} className="space-y-2">
       {extra}
+      {attachment && attachment.fileNames.length ? (
+        <div className="flex flex-wrap gap-2 px-0.5">
+          {attachment.fileNames.map((name, index) => {
+            const ext = fileExt(name);
+            return (
+              <div
+                key={`${name}-${index}`}
+                className="relative flex max-w-[min(100%,18rem)] items-center gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] py-2 pl-2 pr-8"
+              >
+                <FileTypeIcon ext={ext} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-[var(--txt)]" title={name}>
+                    {name}
+                  </p>
+                  <p className="font-mono text-[11px] text-[var(--txt3)]">
+                    {displayType(ext)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => removeAttachment(index)}
+                  aria-label={`Remove ${name}`}
+                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--bg2)] text-[var(--txt2)] hover:bg-[var(--surface)] hover:text-[var(--txt)] disabled:opacity-50"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
       <div className="flex gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-2 focus-within:border-accent">
         {attachment ? (
           <>
@@ -129,11 +244,6 @@ export function PromptBar({
           </button>
         )}
       </div>
-      {attachment && attachment.fileNames.length ? (
-        <p className="truncate px-1 text-xs text-[var(--txt2)]">
-          {attachment.fileNames.join(", ")}
-        </p>
-      ) : null}
     </form>
   );
 }
