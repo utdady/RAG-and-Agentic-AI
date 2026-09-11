@@ -271,6 +271,19 @@ def perform_keyword_search(
     return [hit for _, hit in scored[:n_results]]
 
 
+def perform_similarity_search(
+    collection, query: str, n_results: int = 5
+) -> list[dict]:
+    try:
+        results = collection.query(query_texts=[query], n_results=n_results)
+        if not results or not results["ids"] or not results["ids"][0]:
+            return []
+        return [_format_hit(results, i) for i in range(len(results["ids"][0]))]
+    except Exception as e:
+        print(f"Error in similarity search: {e}")
+        return []
+
+
 def perform_filtered_similarity_search(
     collection,
     query: str,
