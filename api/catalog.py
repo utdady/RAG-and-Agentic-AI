@@ -112,11 +112,11 @@ DEMOS = [
     {
         "slug": "model-compare",
         "title": "Model Comparison Chat",
-        "tagline": "Three Groq slots, structured JSON replies.",
+        "tagline": "Three model slots, structured JSON replies.",
         "phase": 3,
         "kind": "compare",
         "github": "Model%20Comparison%20Chat",
-        "tags": ["Groq", "JSON"],
+        "tags": ["Compare", "JSON"],
     },
     {
         "slug": "nourishbot",
