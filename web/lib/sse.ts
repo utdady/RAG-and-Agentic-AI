@@ -30,6 +30,8 @@ export type HubEvent = {
 };
 
 export function apiBase() {
+  // Production must talk to Render directly — Vercel /api/hub proxies kill long SSE.
+  const prodApi = "https://ai-lab-api-fywf.onrender.com";
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (
@@ -39,9 +41,12 @@ export function apiBase() {
     ) {
       return "/api/hub";
     }
-    return process.env.NEXT_PUBLIC_API_URL || "/api/hub";
+    return (process.env.NEXT_PUBLIC_API_URL || prodApi).replace(/\/$/, "");
   }
-  return process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
+  return (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080").replace(
+    /\/$/,
+    "",
+  );
 }
 
 export async function checkApiHealth(signal?: AbortSignal): Promise<boolean> {

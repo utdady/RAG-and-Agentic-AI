@@ -59,18 +59,18 @@ def run_meal_planner(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     )
     yield task("plan", "Meal plan", "running")
     try:
-        # Clear cached NourishBot `crew_app` (same module name, no run_planner).
-        prepare_app_import("Meal Grocery Planner", chdir=True)
         import queue
         import threading
 
-        from crew_app import run_planner, run_planner_lite  # noqa: WPS433
-
-        planner = run_planner if heavy else run_planner_lite
         result_q: queue.Queue[tuple[str, object]] = queue.Queue()
 
         def _worker() -> None:
             try:
+                # Import inside the worker so SSE can heartbeat during cold loads.
+                prepare_app_import("Meal Grocery Planner", chdir=True)
+                from crew_app import run_planner, run_planner_lite  # noqa: WPS433
+
+                planner = run_planner if heavy else run_planner_lite
                 text = planner(
                     meal_name=meal,
                     servings=servings,
