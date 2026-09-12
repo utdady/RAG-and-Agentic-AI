@@ -23,12 +23,10 @@ from shared.env_load import load_env
 
 load_env(HERE)
 
-from shared.llm import resolve_provider
+from shared.llm import get_groq_vision_chat, resolve_provider
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "nutrition-coach-dev-key")
-
-DEFAULT_GROQ_VISION = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 ASSISTANT_PROMPT = """
 You are an expert nutritionist. Your task is to analyze the food items displayed in the image and provide a detailed nutritional assessment using the following format:
@@ -59,22 +57,14 @@ The nutritional information and calorie estimates provided are approximate and a
 Actual values may vary depending on factors such as portion size, specific ingredients, preparation methods, and individual variations.
 For precise dietary advice or medical guidance, consult a qualified nutritionist or healthcare provider.
 
-Format your response exactly like the template above to ensure consistency.
+Keep the whole answer concise (under ~600 words). Format your response exactly like the template above to ensure consistency.
 """
 
 
 def get_vision_llm():
     provider = resolve_provider()
     if provider == "groq":
-        from langchain_groq import ChatGroq
-
-        api_key = os.getenv("GROQ_API_KEY", "").strip()
-        if not api_key:
-            raise RuntimeError("GROQ_API_KEY is not set in repo-root .env")
-        model = (
-            os.getenv("GROQ_VISION_MODEL", "").strip() or DEFAULT_GROQ_VISION
-        )
-        return ChatGroq(model=model, temperature=0.2, api_key=api_key), f"groq:{model}"
+        return get_groq_vision_chat(temperature=0.2)
 
     from langchain_ollama import ChatOllama
 

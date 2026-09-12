@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 
 from crewai import LLM
 
-DEFAULT_GROQ_VISION = "meta-llama/llama-4-scout-17b-16e-instruct"
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from shared.llm import get_groq_vision_chat
 
 
 def get_crew_llm() -> LLM:
@@ -42,15 +48,7 @@ def get_vision_llm():
         provider = "groq" if os.getenv("GROQ_API_KEY", "").strip() else "ollama"
 
     if provider == "groq":
-        from langchain_groq import ChatGroq
-
-        api_key = os.getenv("GROQ_API_KEY", "").strip()
-        if not api_key:
-            raise RuntimeError("Set GROQ_API_KEY in repo-root .env")
-        model = (
-            os.getenv("GROQ_VISION_MODEL", "").strip() or DEFAULT_GROQ_VISION
-        )
-        return ChatGroq(model=model, temperature=0.2, api_key=api_key), f"groq:{model}"
+        return get_groq_vision_chat(temperature=0.2)
 
     from langchain_ollama import ChatOllama
 

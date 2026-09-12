@@ -83,6 +83,20 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
                 ),
                 code="usage_daily",
             )
+        if (
+            "output tokens" in lower
+            or "otpm" in lower
+            or "expected output" in lower
+            or "request too large" in lower
+        ):
+            return UserFacingError(
+                title="Response too long for this plan",
+                message=(
+                    "The model asked for more output tokens than this Groq plan allows. "
+                    "Try again — the hub now caps vision replies to fit free-tier limits."
+                ),
+                code="usage_otpm",
+            )
         return UserFacingError(
             title="Please wait a moment",
             message=(

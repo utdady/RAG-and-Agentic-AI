@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -15,11 +14,7 @@ if str(ROOT) not in sys.path:
 
 import config
 from helpers import has_items_section, strip_model_thinking
-from shared.llm import (
-    DEFAULT_GROQ_VISION_MODEL,
-    resolve_groq_vision_model,
-    resolve_provider,
-)
+from shared.llm import get_groq_vision_chat, resolve_provider
 
 logger = logging.getLogger(__name__)
 
@@ -32,22 +27,7 @@ class VisionFashionService:
     def _make_llm(self):
         provider = resolve_provider()
         if provider == "groq":
-            from langchain_groq import ChatGroq
-
-            api_key = os.getenv("GROQ_API_KEY", "").strip()
-            if not api_key:
-                raise RuntimeError("GROQ_API_KEY required for Groq vision.")
-            model = resolve_groq_vision_model()
-            lower = model.lower()
-            if (
-                "llama-4-scout" in lower
-                or "vision-preview" in lower
-                or "llava-v1.5" in lower
-            ):
-                model = DEFAULT_GROQ_VISION_MODEL
-            return ChatGroq(
-                model=model, temperature=self.temperature, api_key=api_key
-            ), f"groq:{model}"
+            return get_groq_vision_chat(temperature=self.temperature)
         from langchain_ollama import ChatOllama
 
         model = config.OLLAMA_VISION_MODEL

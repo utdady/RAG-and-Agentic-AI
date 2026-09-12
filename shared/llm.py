@@ -38,6 +38,8 @@ OLLAMA_CANDIDATES = {
 
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
 DEFAULT_GROQ_VISION_MODEL = "qwen/qwen3.6-27b"
+# Free Groq on_demand OTPM for qwen3.6-27b is often 1000 — stay under that.
+DEFAULT_GROQ_VISION_MAX_TOKENS = 800
 
 # Groq retires ids over time; map old env values to current replacements.
 GROQ_MODEL_ALIASES: dict[str, str] = {
@@ -73,6 +75,32 @@ def resolve_groq_vision_model() -> str:
     if "llama-4-scout" in lower or "vision-preview" in lower or "llava-v1.5" in lower:
         return DEFAULT_GROQ_VISION_MODEL
     return raw
+
+
+def resolve_groq_vision_max_tokens() -> int:
+    """Cap completion size for free-tier Groq OTPM (often 1000 for vision models)."""
+    raw = os.getenv("GROQ_VISION_MAX_TOKENS", "").strip()
+    if raw.isdigit():
+        return max(256, min(int(raw), 8192))
+    return DEFAULT_GROQ_VISION_MAX_TOKENS
+
+
+def get_groq_vision_chat(*, temperature: float = 0.2) -> tuple[Any, str]:
+    """LangChain ChatGroq configured for hub vision demos (model + max_tokens)."""
+    from langchain_groq import ChatGroq
+
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not set in repo-root .env")
+    model = resolve_groq_vision_model()
+    max_tokens = resolve_groq_vision_max_tokens()
+    llm = ChatGroq(
+        model=model,
+        temperature=temperature,
+        api_key=api_key,
+        max_tokens=max_tokens,
+    )
+    return llm, f"groq:{model}"
 
 
 @dataclass(frozen=True)

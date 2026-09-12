@@ -160,6 +160,7 @@ def run_nutrition_coach(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         yield from finish_text("Upload a meal photo first.")
         return
     yield thinking("Vision nutrition assessment")
+    pin_groq_vision_model()
     prepare_app_import("AI Nutrition Coach")
     from app import ASSISTANT_PROMPT, generate_model_response  # noqa: WPS433
 
