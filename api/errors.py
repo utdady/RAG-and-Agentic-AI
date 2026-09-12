@@ -109,6 +109,20 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
     if "groq_api_key" in lower or ("api key" in lower and "not set" in lower):
         return demo_unavailable()
 
+    if (
+        "too small" in lower
+        or "at least 2 pixels" in lower
+        or "must have at least 2 pixels" in lower
+    ):
+        return UserFacingError(
+            title="Photo too small",
+            message=(
+                "That image is too small for the vision model. "
+                "Paste or attach a normal meal photo and try again."
+            ),
+            code="image_too_small",
+        )
+
     if "model_not_found" in lower or (
         "does not exist" in lower and "model" in lower
     ):

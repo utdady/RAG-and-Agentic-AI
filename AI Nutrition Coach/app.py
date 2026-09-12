@@ -5,7 +5,6 @@ Upload a meal photo → vision LLM nutritional assessment (Groq / Ollama).
 
 from __future__ import annotations
 
-import base64
 import os
 import re
 import sys
@@ -25,6 +24,7 @@ load_env(HERE)
 
 from shared.llm import get_groq_vision_chat, resolve_provider
 from shared.strip_thinking import strip_model_thinking
+from shared.vision_image import encode_image_for_vision
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "nutrition-coach-dev-key")
@@ -79,7 +79,27 @@ def input_image_setup(uploaded_file) -> str:
     bytes_data = uploaded_file.read()
     if not bytes_data:
         raise FileNotFoundError("Empty upload")
-    return base64.b64encode(bytes_data).decode("utf-8")
+    return encode_image_for_vision(bytes_data)
+
+
+def _message_text(content: object) -> str:
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                parts.append(str(block.get("text") or ""))
+            else:
+                text = getattr(block, "text", None)
+                if text:
+                    parts.append(str(text))
+        return "".join(parts)
+    return str(content)
 
 
 def format_response_html(response_text: str) -> str:
@@ -128,7 +148,7 @@ def generate_model_response(
             ]
         )
         out = llm.invoke([msg])
-        raw = strip_model_thinking(getattr(out, "content", str(out)))
+        raw = strip_model_thinking(_message_text(getattr(out, "content", out)))
         if not raw:
             raw = (
                 "I couldn't produce a clean nutrition write-up for this image. "

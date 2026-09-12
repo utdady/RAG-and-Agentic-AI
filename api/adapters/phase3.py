@@ -160,15 +160,48 @@ def run_nutrition_coach(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         yield from finish_text("Upload a meal photo first.")
         return
     yield thinking("Vision nutrition assessment")
-    pin_groq_vision_model()
-    prepare_app_import("AI Nutrition Coach")
-    from app import ASSISTANT_PROMPT, generate_model_response  # noqa: WPS433
+    try:
+        image_path = Path(path).resolve()
+        pin_groq_vision_model()
+        prepare_app_import("AI Nutrition Coach")
+        import queue
+        import threading
 
-    encoded = base64.b64encode(Path(path).read_bytes()).decode("utf-8")
-    text = generate_model_response(
-        encoded, question, ASSISTANT_PROMPT, as_html=False
-    )
-    yield from finish_text(text)
+        from app import ASSISTANT_PROMPT, generate_model_response  # noqa: WPS433
+        from shared.vision_image import encode_image_for_vision  # noqa: WPS433
+
+        encoded = encode_image_for_vision(image_path)
+        result_q: queue.Queue[tuple[str, object]] = queue.Queue()
+
+        def _worker() -> None:
+            try:
+                text = generate_model_response(
+                    encoded, question, ASSISTANT_PROMPT, as_html=False
+                )
+                result_q.put(("ok", text))
+            except Exception as exc:  # noqa: BLE001
+                result_q.put(("err", exc))
+
+        worker = threading.Thread(target=_worker, daemon=True)
+        worker.start()
+        waited = 0
+        while worker.is_alive():
+            worker.join(10)
+            waited += 10
+            if worker.is_alive():
+                yield thinking(f"Still analyzing the meal photo… ({waited}s)")
+
+        kind, payload_or_exc = result_q.get()
+        if kind == "err":
+            friendly = humanize_exception(payload_or_exc)  # type: ignore[arg-type]
+            yield error(friendly.message, title=friendly.title)
+            yield done()
+            return
+        yield from finish_text(str(payload_or_exc))
+    except Exception as exc:  # noqa: BLE001
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
 
 
 def run_model_compare(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
