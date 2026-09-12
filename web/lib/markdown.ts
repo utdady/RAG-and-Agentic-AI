@@ -2,6 +2,9 @@
 export function normalizeAssistantMarkdown(text: string): string {
   let out = text;
 
+  // Models sometimes emit HTML breaks inside markdown.
+  out = out.replace(/<br\s*\/?>/gi, "\n");
+
   // Legacy Data Viz suffix: "--- generated code ---" + raw python
   if (out.includes("--- generated code ---")) {
     const segments = out.split("--- generated code ---");

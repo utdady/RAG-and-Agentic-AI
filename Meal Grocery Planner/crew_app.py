@@ -272,7 +272,8 @@ def run_planner_lite(
         "You are a practical meal-planning assistant. Write clear markdown. "
         "Be concrete and concise — under 550 words. Educational grocery guidance only. "
         "Prefer numbered/bulleted lists over tables. Put a blank line between sections "
-        "and between recipe steps. Never smash column headers together."
+        "and between recipe steps. Never smash column headers together. "
+        "Keep every section short so the full plan fits; no HTML tags."
     )
     user = (
         f"Plan a meal for:\n"
@@ -282,20 +283,20 @@ def run_planner_lite(
         f"- Dietary: {diet}\n"
         f"- Cooking skill: {cooking_skill}\n\n"
         "Include these sections as ## headings:\n"
-        "1. Recipe & steps — numbered list; each step on its own line "
+        "1. Recipe & steps — 5–7 numbered steps; each step one short paragraph "
         "(optional leading time like `5 min — Prep: …`)\n"
         "2. Shopping list — bullets grouped by store section\n"
-        "3. Budget tips — short bullets\n"
-        "4. Leftover ideas — short bullets\n"
+        "3. Budget tips — 3 short bullets\n"
+        "4. Leftover ideas — 2–3 short bullets\n"
         f"{nutrition_line}"
-        "Do not use markdown tables."
+        "Do not use markdown tables or HTML."
     )
 
     llm = get_chat_llm(temperature=0.3)
     # Cap completion size for free-tier Groq limits.
     if hasattr(llm, "bind"):
         try:
-            llm = llm.bind(max_tokens=900)
+            llm = llm.bind(max_tokens=1200)
         except Exception:
             pass
 

@@ -662,46 +662,74 @@ export function DemoWorkspace({ demo }: Props) {
           {demo.kind === "form" ? (
             <form
               onSubmit={onFormSubmit}
-              className="grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-4"
+              className="grid grid-cols-2 gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 sm:grid-cols-6"
             >
-              <input
-                name="meal_name"
-                defaultValue="weeknight pasta"
-                placeholder="Meal"
-                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-              />
-              <input
-                name="servings"
-                defaultValue="4"
-                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-              />
-              <input
-                name="budget"
-                defaultValue="moderate"
-                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-              />
-              <input
-                name="dietary"
-                placeholder="dietary restrictions"
-                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-              />
-              <input
-                name="cooking_skill"
-                defaultValue="intermediate"
-                className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2 text-sm"
-              />
+              <label className="col-span-2 flex flex-col gap-1 sm:col-span-3">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--txt3)]">
+                  Meal
+                </span>
+                <input
+                  name="meal_name"
+                  defaultValue="weeknight pasta"
+                  placeholder="e.g. weeknight pasta"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-1.5 text-sm"
+                />
+              </label>
+              <label className="col-span-1 flex flex-col gap-1 sm:col-span-1">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--txt3)]">
+                  Servings
+                </span>
+                <input
+                  name="servings"
+                  defaultValue="4"
+                  inputMode="numeric"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-1.5 text-sm"
+                />
+              </label>
+              <label className="col-span-1 flex flex-col gap-1 sm:col-span-2">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--txt3)]">
+                  Budget
+                </span>
+                <input
+                  name="budget"
+                  defaultValue="moderate"
+                  placeholder="budget"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-1.5 text-sm"
+                />
+              </label>
+              <label className="col-span-2 flex flex-col gap-1 sm:col-span-3">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--txt3)]">
+                  Dietary
+                </span>
+                <input
+                  name="dietary"
+                  placeholder="e.g. vegetarian, gluten-free"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-1.5 text-sm"
+                />
+              </label>
+              <label className="col-span-2 flex flex-col gap-1 sm:col-span-3">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-[var(--txt3)]">
+                  Skill
+                </span>
+                <input
+                  name="cooking_skill"
+                  defaultValue="intermediate"
+                  placeholder="cooking skill"
+                  className="rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-1.5 text-sm"
+                />
+              </label>
               {busy ? (
                 <button
                   type="button"
                   onClick={stopRun}
-                  className="rounded-xl border border-[var(--warn)]/50 bg-[var(--warn)]/15 px-4 py-2 text-sm font-medium text-[var(--warn)] hover:bg-[var(--warn)]/25"
+                  className="col-span-2 rounded-xl border border-[var(--warn)]/50 bg-[var(--warn)]/15 px-4 py-2 text-sm font-medium text-[var(--warn)] hover:bg-[var(--warn)]/25 sm:col-span-6"
                 >
                   Stop
                 </button>
               ) : (
                 <button
                   type="submit"
-                  className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-black"
+                  className="col-span-2 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-black sm:col-span-6"
                 >
                   Plan meal
                 </button>
