@@ -18,8 +18,8 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
-from config import MODEL_SLOTS, SYSTEM_PROMPT, TEMPERATURE
-from shared.llm import pick_ollama_model, resolve_provider
+from config import MAX_TOKENS, MODEL_SLOTS, SYSTEM_PROMPT, TEMPERATURE
+from shared.llm import GROQ_MODEL_ALIASES, pick_ollama_model, resolve_provider
 
 
 class AIResponse(BaseModel):
@@ -32,7 +32,7 @@ class AIResponse(BaseModel):
 
 json_parser = JsonOutputParser(pydantic_object=AIResponse)
 
-# Simple chat-style prompt (works across Groq Llama / Gemma / etc.)
+# Simple chat-style prompt (works across Groq / Ollama backends)
 PROMPT = ChatPromptTemplate.from_messages(
     [
         (
@@ -43,6 +43,11 @@ PROMPT = ChatPromptTemplate.from_messages(
         ("human", "{user_prompt}"),
     ]
 )
+
+
+def _resolve_slot_groq_model(raw: str) -> str:
+    model = (raw or "").strip()
+    return GROQ_MODEL_ALIASES.get(model, model)
 
 
 def _make_llm(slot_key: str):
@@ -61,11 +66,18 @@ def _make_llm(slot_key: str):
         else:
             from langchain_groq import ChatGroq
 
-            return ChatGroq(
-                model=slot["model"],
-                temperature=TEMPERATURE,
-                api_key=api_key,
-            )
+            model = _resolve_slot_groq_model(slot["model"])
+            kwargs: dict = {
+                "model": model,
+                "temperature": TEMPERATURE,
+                "api_key": api_key,
+                "max_tokens": MAX_TOKENS,
+            }
+            # Qwen thinking burns the completion budget before JSON lands.
+            if "qwen" in model.lower():
+                kwargs["reasoning_effort"] = "none"
+                kwargs["reasoning_format"] = "hidden"
+            return ChatGroq(**kwargs)
 
     from langchain_ollama import ChatOllama
 

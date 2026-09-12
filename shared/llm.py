@@ -48,6 +48,8 @@ GROQ_MODEL_ALIASES: dict[str, str] = {
     "llama3-8b-8192": "openai/gpt-oss-20b",
     "llama3-70b-8192": "openai/gpt-oss-120b",
     "mixtral-8x7b-32768": "openai/gpt-oss-120b",
+    "gemma2-9b-it": "qwen/qwen3.6-27b",
+    "gemma-7b-it": "qwen/qwen3.6-27b",
 }
 
 GROQ_VISION_MODEL_ALIASES: dict[str, str] = {

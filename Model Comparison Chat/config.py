@@ -19,27 +19,27 @@ load_env(HERE)
 MAX_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "256"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
 
-# UI slots keep lab names; map to real Groq/Ollama model ids via env
-# llama  = fast small model
-# granite = mid / alternate family (Gemma on Groq, or Ollama granite)
-# mistral = larger / higher-quality slot
+# UI slots keep lab keys; map to current Groq production ids (Llama/Gemma ids retired).
+# llama  = fast
+# granite = mid / alternate
+# mistral = higher-quality
 MODEL_SLOTS = {
     "llama": {
-        "label": "Llama (fast)",
+        "label": "Fast",
         "provider": os.getenv("LLAMA_PROVIDER", "auto"),
-        "model": os.getenv("LLAMA_MODEL", "llama-3.1-8b-instant"),
+        "model": os.getenv("LLAMA_MODEL", "openai/gpt-oss-20b"),
         "ollama_model": os.getenv("LLAMA_OLLAMA_MODEL", "llama3.2:3b"),
     },
     "granite": {
-        "label": "Gemma (balanced)",
+        "label": "Balanced",
         "provider": os.getenv("GRANITE_PROVIDER", "auto"),
-        "model": os.getenv("GRANITE_MODEL", "gemma2-9b-it"),
+        "model": os.getenv("GRANITE_MODEL", "qwen/qwen3.6-27b"),
         "ollama_model": os.getenv("GRANITE_OLLAMA_MODEL", "gemma2:2b"),
     },
     "mistral": {
-        "label": "Llama 70B (quality)",
+        "label": "Quality",
         "provider": os.getenv("MISTRAL_PROVIDER", "auto"),
-        "model": os.getenv("MISTRAL_MODEL", "llama-3.3-70b-versatile"),
+        "model": os.getenv("MISTRAL_MODEL", "openai/gpt-oss-120b"),
         "ollama_model": os.getenv("MISTRAL_OLLAMA_MODEL", "mistral:7b"),
     },
 }

@@ -225,9 +225,9 @@ def run_model_compare(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
 
     parts = []
     for name, fn in (
-        ("Llama slot", llama_response),
-        ("Granite slot", granite_response),
-        ("Mistral slot", mistral_response),
+        ("Fast slot", llama_response),
+        ("Balanced slot", granite_response),
+        ("Quality slot", mistral_response),
     ):
         try:
             out = fn(SYSTEM_PROMPT, question)

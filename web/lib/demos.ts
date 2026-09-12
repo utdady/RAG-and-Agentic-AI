@@ -439,9 +439,9 @@ export const DEMOS: Demo[] = [
   {
     slug: "model-compare",
     title: "Model Comparison Chat",
-    tagline: "Three Groq slots, structured JSON replies.",
+    tagline: "Three model slots, structured JSON replies.",
     description:
-      "Send the same prompt to three model slots and compare structured JSON responses side by side — useful for tone, format, and instruction-following differences.",
+      "Send the same prompt to three slots (fast / balanced / quality) and compare structured JSON responses side by side — useful for tone, format, and instruction-following differences.",
     tips: [
       "Give clear instructions in the prompt — tone, length, format, and audience.",
       "Use tasks with a definite answer shape, e.g. “polite decline email in JSON with subject and body.”",
@@ -450,7 +450,7 @@ export const DEMOS: Demo[] = [
     phase: 3,
     kind: "compare",
     github: "Model%20Comparison%20Chat",
-    tags: ["Groq", "JSON"],
+    tags: ["Compare", "JSON"],
     placeholder: "Write a polite reply declining a meeting…",
   },
   {
