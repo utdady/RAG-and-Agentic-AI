@@ -71,7 +71,9 @@ function formatFetchError(
   if (phase === "stream") {
     return formatErrorDisplay({
       title: "Response interrupted",
-      message: "The answer didn't finish loading. Please run your question again.",
+      message:
+        "The connection closed before the answer finished. " +
+        "Long demos can take a minute — please run it again.",
     });
   }
   if (err instanceof TypeError) {

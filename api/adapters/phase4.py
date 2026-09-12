@@ -87,8 +87,8 @@ def run_meal_planner(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         worker.start()
         waited = 0
         while worker.is_alive():
-            worker.join(10)
-            waited += 10
+            worker.join(5)
+            waited += 5
             if worker.is_alive():
                 yield thinking(f"Still planning your meal… ({waited}s)")
 

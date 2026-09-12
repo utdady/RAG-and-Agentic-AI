@@ -429,6 +429,11 @@ export function DemoWorkspace({ demo }: Props) {
             ),
           );
           gotError = true;
+        } else if (!sawDone && (gotTokens || gotImages) && !gotError) {
+          // Partial answer arrived before the stream dropped — keep it visible.
+          setError(
+            "Response interrupted\n\nShowing the partial answer above. Run again if you need the rest.",
+          );
         }
       } catch (streamErr) {
         if (controller.signal.aborted || isAbortError(streamErr)) {

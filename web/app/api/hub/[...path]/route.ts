@@ -38,7 +38,13 @@ async function proxy(
 
   return new Response(upstream.body, {
     status: upstream.status,
-    headers: upstream.headers,
+    headers: {
+      "Content-Type":
+        upstream.headers.get("content-type") || "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
   });
 }
 
