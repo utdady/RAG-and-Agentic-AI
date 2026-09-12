@@ -270,7 +270,9 @@ def run_planner_lite(
     )
     system = (
         "You are a practical meal-planning assistant. Write clear markdown. "
-        "Be concrete and concise — under 550 words. Educational grocery guidance only."
+        "Be concrete and concise — under 550 words. Educational grocery guidance only. "
+        "Prefer numbered/bulleted lists over tables. Put a blank line between sections "
+        "and between recipe steps. Never smash column headers together."
     )
     user = (
         f"Plan a meal for:\n"
@@ -279,12 +281,14 @@ def run_planner_lite(
         f"- Budget: {budget}\n"
         f"- Dietary: {diet}\n"
         f"- Cooking skill: {cooking_skill}\n\n"
-        "Include these sections:\n"
-        "1. Recipe & steps\n"
-        "2. Shopping list (grouped by store section) with rough quantities\n"
-        "3. Budget tips\n"
-        "4. Leftover ideas\n"
+        "Include these sections as ## headings:\n"
+        "1. Recipe & steps — numbered list; each step on its own line "
+        "(optional leading time like `5 min — Prep: …`)\n"
+        "2. Shopping list — bullets grouped by store section\n"
+        "3. Budget tips — short bullets\n"
+        "4. Leftover ideas — short bullets\n"
         f"{nutrition_line}"
+        "Do not use markdown tables."
     )
 
     llm = get_chat_llm(temperature=0.3)
