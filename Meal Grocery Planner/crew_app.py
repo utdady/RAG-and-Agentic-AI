@@ -240,3 +240,69 @@ def run_planner(
         }
     )
     return getattr(result, "raw", None) or str(result)
+
+
+def run_planner_lite(
+    meal_name: str,
+    servings: int,
+    budget: str,
+    dietary_restrictions: str,
+    cooking_skill: str,
+    include_nutrition: bool = False,
+) -> str:
+    """Single LLM call for hub free-tier (avoids multi-agent TPM burn)."""
+    import sys
+
+    root = Path(__file__).resolve().parents[1]
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+
+    from langchain_core.messages import HumanMessage, SystemMessage
+
+    from shared.llm import get_chat_llm, invoke_chat
+    from shared.strip_thinking import strip_thinking
+
+    diet = (dietary_restrictions or "").strip() or "none"
+    nutrition_line = (
+        "- Brief nutrition notes (calories/macros estimates only)\n"
+        if include_nutrition
+        else ""
+    )
+    system = (
+        "You are a practical meal-planning assistant. Write clear markdown. "
+        "Be concrete and concise — under 550 words. Educational grocery guidance only."
+    )
+    user = (
+        f"Plan a meal for:\n"
+        f"- Dish: {meal_name}\n"
+        f"- Servings: {servings}\n"
+        f"- Budget: {budget}\n"
+        f"- Dietary: {diet}\n"
+        f"- Cooking skill: {cooking_skill}\n\n"
+        "Include these sections:\n"
+        "1. Recipe & steps\n"
+        "2. Shopping list (grouped by store section) with rough quantities\n"
+        "3. Budget tips\n"
+        "4. Leftover ideas\n"
+        f"{nutrition_line}"
+    )
+
+    llm = get_chat_llm(temperature=0.3)
+    # Cap completion size for free-tier Groq limits.
+    if hasattr(llm, "bind"):
+        try:
+            llm = llm.bind(max_tokens=900)
+        except Exception:
+            pass
+
+    msg = invoke_chat(
+        llm,
+        [SystemMessage(content=system), HumanMessage(content=user)],
+    )
+    text = getattr(msg, "content", None) or str(msg)
+    if isinstance(text, list):
+        text = "".join(
+            part.get("text", "") if isinstance(part, dict) else str(part)
+            for part in text
+        )
+    return strip_thinking(str(text)).strip() or str(text)

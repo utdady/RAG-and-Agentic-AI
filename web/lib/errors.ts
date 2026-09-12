@@ -3,22 +3,23 @@ export type FriendlyError = {
   message: string;
 };
 
-function waitHint(raw: string): string {
+function waitSeconds(raw: string): number | null {
   const minMatch = raw.match(/try again in (\d+(?:\.\d+)?)\s*m/i);
-  if (minMatch) {
-    const minutes = Math.max(1, Math.round(Number(minMatch[1])));
+  if (minMatch) return Number(minMatch[1]) * 60;
+  const secMatch = raw.match(/try again in (\d+(?:\.\d+)?)\s*s/i);
+  if (secMatch) return Number(secMatch[1]);
+  return null;
+}
+
+function waitHint(raw: string): string {
+  const seconds = waitSeconds(raw);
+  if (seconds == null) return " Please try again in a few minutes.";
+  if (seconds >= 60) {
+    const minutes = Math.max(1, Math.round(seconds / 60));
     return ` Please try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`;
   }
-  const secMatch = raw.match(/try again in (\d+(?:\.\d+)?)\s*s/i);
-  if (secMatch) {
-    const seconds = Math.max(5, Math.round(Number(secMatch[1])));
-    if (seconds >= 60) {
-      const minutes = Math.max(1, Math.round(seconds / 60));
-      return ` Please try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`;
-    }
-    return ` Please try again in about ${seconds} seconds.`;
-  }
-  return " Please try again in a few minutes.";
+  const secs = Math.max(5, Math.round(seconds));
+  return ` Please try again in about ${secs} seconds.`;
 }
 
 function parseError(): FriendlyError {
@@ -52,13 +53,20 @@ export function humanizeError(raw: string, title?: string): FriendlyError {
   const lower = raw.toLowerCase();
 
   if (raw.includes("429") || lower.includes("rate limit") || lower.includes("rate_limit")) {
-    if (lower.includes("tokens per day") || lower.includes("tpd") || lower.includes("per day")) {
+    const waitS = waitSeconds(raw) ?? 0;
+    const daily =
+      lower.includes("tokens per day") ||
+      lower.includes("tpd") ||
+      lower.includes("per day") ||
+      lower.includes("rpd") ||
+      waitS >= 3600;
+    if (daily) {
       return {
         title: "Daily usage limit reached",
         message:
-          "This demo has used its allowed tokens for today." +
+          "This demo has used its allowed Groq free-tier tokens for today." +
           waitHint(raw) +
-          " You can also come back tomorrow.",
+          " Or set a different GROQ_API_KEY on the API host.",
       };
     }
     return {

@@ -46,19 +46,25 @@ def something_wrong() -> UserFacingError:
     )
 
 
-def _wait_hint(raw: str) -> str:
+def _wait_seconds(raw: str) -> float | None:
     match = re.search(r"try again in (\d+(?:\.\d+)?)\s*m", raw, re.I)
     if match:
-        minutes = max(1, int(float(match.group(1))))
-        return f" Please try again in about {minutes} minute{'s' if minutes != 1 else ''}."
+        return float(match.group(1)) * 60
     match = re.search(r"try again in (\d+(?:\.\d+)?)\s*s", raw, re.I)
     if match:
-        seconds = max(5, int(float(match.group(1))))
-        if seconds >= 60:
-            minutes = max(1, round(seconds / 60))
-            return f" Please try again in about {minutes} minute{'s' if minutes != 1 else ''}."
-        return f" Please try again in about {seconds} seconds."
-    return " Please try again in a few minutes."
+        return float(match.group(1))
+    return None
+
+
+def _wait_hint(raw: str) -> str:
+    seconds = _wait_seconds(raw)
+    if seconds is None:
+        return " Please try again in a few minutes."
+    if seconds >= 60:
+        minutes = max(1, int(round(seconds / 60)))
+        return f" Please try again in about {minutes} minute{'s' if minutes != 1 else ''}."
+    seconds_i = max(5, int(seconds))
+    return f" Please try again in about {seconds_i} seconds."
 
 
 def humanize_exception(exc: BaseException) -> UserFacingError:
@@ -73,13 +79,21 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
         return parse_error()
 
     if "429" in raw or "rate limit" in lower or "rate_limit" in lower:
-        if "tokens per day" in lower or "tpd" in lower or "per day" in lower:
+        wait_s = _wait_seconds(raw) or 0
+        daily = (
+            "tokens per day" in lower
+            or "tpd" in lower
+            or "per day" in lower
+            or "rpd" in lower
+            or wait_s >= 3600
+        )
+        if daily:
             return UserFacingError(
                 title="Daily usage limit reached",
                 message=(
-                    "This demo has used its allowed tokens for today."
+                    "This demo has used its allowed Groq free-tier tokens for today."
                     + _wait_hint(raw)
-                    + " You can also come back tomorrow."
+                    + " Or set a different GROQ_API_KEY on the API host."
                 ),
                 code="usage_daily",
             )

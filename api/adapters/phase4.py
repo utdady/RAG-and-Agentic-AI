@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from api.adapters.common import finish_text, require_groq
+from api.adapters.common import finish_text, hub_heavy_retrieval, require_groq
 from api.bootstrap import prepare_app_import
 from api.events import task, thinking
 
@@ -50,8 +50,13 @@ def run_meal_planner(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     budget = (payload.get("budget") or "moderate").strip()
     dietary = (payload.get("dietary") or "").strip()
     skill = (payload.get("cooking_skill") or "intermediate").strip()
-    include_nutrition = bool(payload.get("include_nutrition", True))
-    yield thinking("Running sequential meal-planning crew")
+    include_nutrition = bool(payload.get("include_nutrition", False))
+    heavy = hub_heavy_retrieval()
+    yield thinking(
+        "Running full meal-planning crew"
+        if heavy
+        else "Drafting a compact meal plan (hub lite)"
+    )
     yield task("plan", "Meal plan", "running")
     try:
         # Clear cached NourishBot `crew_app` (same module name, no run_planner).
@@ -59,13 +64,14 @@ def run_meal_planner(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         import queue
         import threading
 
-        from crew_app import run_planner  # noqa: WPS433
+        from crew_app import run_planner, run_planner_lite  # noqa: WPS433
 
+        planner = run_planner if heavy else run_planner_lite
         result_q: queue.Queue[tuple[str, object]] = queue.Queue()
 
         def _worker() -> None:
             try:
-                text = run_planner(
+                text = planner(
                     meal_name=meal,
                     servings=servings,
                     budget=budget,
