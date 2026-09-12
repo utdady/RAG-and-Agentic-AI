@@ -16,7 +16,7 @@ from shared.env_load import load_env
 load_env(HERE)
 
 # Generation defaults
-MAX_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "256"))
+MAX_TOKENS = int(os.getenv("MAX_NEW_TOKENS", "512"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
 
 # UI slots keep lab keys; map to current Groq production ids (Llama/Gemma ids retired).
