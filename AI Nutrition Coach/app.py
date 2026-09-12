@@ -151,8 +151,8 @@ def generate_model_response(
         raw = strip_model_thinking(_message_text(getattr(out, "content", out)))
         if not raw:
             raw = (
-                "I couldn't produce a clean nutrition write-up for this image. "
-                "Please try again with a clearer meal photo."
+                "I couldn't produce a nutrition write-up for this image. "
+                "Please try again in a moment."
             )
         if as_html:
             return format_response_html(raw)

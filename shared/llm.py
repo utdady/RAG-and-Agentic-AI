@@ -94,12 +94,21 @@ def get_groq_vision_chat(*, temperature: float = 0.2) -> tuple[Any, str]:
         raise RuntimeError("GROQ_API_KEY is not set in repo-root .env")
     model = resolve_groq_vision_model()
     max_tokens = resolve_groq_vision_max_tokens()
-    llm = ChatGroq(
-        model=model,
-        temperature=temperature,
-        api_key=api_key,
-        max_tokens=max_tokens,
+    # Qwen3.6 defaults to thinking mode and can burn the whole max_tokens budget
+    # on <think>…</think>, leaving an empty user-visible answer after stripping.
+    reasoning_effort = (
+        os.getenv("GROQ_VISION_REASONING_EFFORT", "none").strip().lower() or "none"
     )
+    kwargs: dict[str, Any] = {
+        "model": model,
+        "temperature": temperature,
+        "api_key": api_key,
+        "max_tokens": max_tokens,
+        "reasoning_format": "hidden",
+    }
+    if reasoning_effort in {"none", "default", "low", "medium", "high"}:
+        kwargs["reasoning_effort"] = reasoning_effort
+    llm = ChatGroq(**kwargs)
     return llm, f"groq:{model}"
 
 
