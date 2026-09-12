@@ -3,6 +3,7 @@
 import {
   useEffect,
   useRef,
+  useState,
   type ClipboardEvent,
   type FormEvent,
   type ReactNode,
@@ -172,6 +173,12 @@ export type AttachmentProps = {
   onFilesChange: () => void;
 };
 
+type AttachmentPreview = {
+  name: string;
+  url: string | null;
+  isImage: boolean;
+};
+
 export function PromptBar({
   placeholder,
   busy,
@@ -195,6 +202,7 @@ export function PromptBar({
   onStop?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [previews, setPreviews] = useState<AttachmentPreview[]>([]);
 
   useEffect(() => {
     if (draftNonce <= 0 || draft == null) return;
@@ -205,6 +213,34 @@ export function PromptBar({
     const len = draft.length;
     input.setSelectionRange(len, len);
   }, [draft, draftNonce]);
+
+  useEffect(() => {
+    const names = attachment?.fileNames ?? [];
+    if (!attachment || !names.length) {
+      setPreviews([]);
+      return;
+    }
+    const files = attachment.inputRef.current?.files
+      ? Array.from(attachment.inputRef.current.files)
+      : [];
+    const next: AttachmentPreview[] = names.map((name, i) => {
+      const file = files[i];
+      const isImage = Boolean(file?.type.startsWith("image/"));
+      return {
+        name,
+        isImage,
+        url: file && isImage ? URL.createObjectURL(file) : null,
+      };
+    });
+    setPreviews(next);
+    return () => {
+      for (const p of next) {
+        if (p.url) URL.revokeObjectURL(p.url);
+      }
+    };
+    // fileNames contents drive previews; avoid depending on attachment object identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- names joined is the stable key
+  }, [attachment?.fileNames.join("\0")]);
 
   function handle(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -263,36 +299,45 @@ export function PromptBar({
   return (
     <form onSubmit={handle} className="space-y-2" autoComplete="off">
       {extra}
-      {attachment && attachment.fileNames.length ? (
+      {attachment && previews.length ? (
         <div className="flex flex-wrap gap-2 px-0.5">
-          {attachment.fileNames.map((name, index) => {
-            const ext = fileExt(name);
-            return (
-              <div
-                key={`${name}-${index}`}
-                className="relative flex max-w-[min(100%,18rem)] items-center gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] py-2 pl-2 pr-8"
-              >
-                <FileTypeIcon ext={ext} />
-                <div className="min-w-0">
-                  <p className="truncate text-sm text-[var(--txt)]" title={name}>
-                    {name}
-                  </p>
-                  <p className="font-mono text-[11px] text-[var(--txt3)]">
-                    {displayType(ext)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => removeAttachment(index)}
-                  aria-label={`Remove ${name}`}
-                  className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--bg2)] text-[var(--txt2)] hover:bg-[var(--surface)] hover:text-[var(--txt)] disabled:opacity-50"
+          {previews.map((item, index) => (
+            <div
+              key={`${item.name}-${index}`}
+              className="relative flex max-w-[min(100%,18rem)] items-center gap-2.5 rounded-xl border border-[var(--line)] bg-[var(--surface)] py-2 pl-2 pr-8"
+            >
+              {item.isImage && item.url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={item.url}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-md object-cover ring-1 ring-[var(--line)]"
+                />
+              ) : (
+                <FileTypeIcon ext={fileExt(item.name)} />
+              )}
+              <div className="min-w-0">
+                <p
+                  className="truncate text-sm text-[var(--txt)]"
+                  title={item.name}
                 >
-                  <CloseIcon />
-                </button>
+                  {item.name}
+                </p>
+                <p className="font-mono text-[11px] text-[var(--txt3)]">
+                  {displayType(fileExt(item.name))}
+                </p>
               </div>
-            );
-          })}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => removeAttachment(index)}
+                aria-label={`Remove ${item.name}`}
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--bg2)] text-[var(--txt2)] hover:bg-[var(--surface)] hover:text-[var(--txt)] disabled:opacity-50"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          ))}
         </div>
       ) : null}
       <div className="flex gap-2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-2 focus-within:border-accent">

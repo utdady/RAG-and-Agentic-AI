@@ -32,7 +32,10 @@ type Turn = {
   id: string;
   user: string;
   text: string;
+  /** Assistant-generated images (charts, catalog matches). */
   images: string[];
+  /** User-uploaded image previews for this turn. */
+  userImages: string[];
   error?: string;
 };
 
@@ -46,18 +49,38 @@ function formatElapsed(ms: number) {
 
 function UserBubble({
   text,
+  images,
   onEdit,
   disabled,
 }: {
   text: string;
+  images?: string[];
   onEdit?: () => void;
   disabled?: boolean;
 }) {
+  const hasText = Boolean(text.trim());
+  const hasImages = Boolean(images?.length);
+  if (!hasText && !hasImages) return null;
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="max-w-[min(85%,42rem)] rounded-2xl rounded-tr-sm border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm">
-        {text}
-      </div>
+    <div className="flex flex-col items-end gap-1.5">
+      {hasImages ? (
+        <div className="flex max-w-[min(85%,42rem)] flex-wrap justify-end gap-2">
+          {images!.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`${src}-${i}`}
+              src={src}
+              alt="Attached"
+              className="max-h-48 max-w-full rounded-xl border border-[var(--line)] object-contain"
+            />
+          ))}
+        </div>
+      ) : null}
+      {hasText ? (
+        <div className="max-w-[min(85%,42rem)] rounded-2xl rounded-tr-sm border border-[var(--line)] bg-[var(--surface)] px-4 py-3 text-sm">
+          {text}
+        </div>
+      ) : null}
       <MessageActions
         align="end"
         copyText={text}
@@ -112,6 +135,7 @@ export function DemoWorkspace({ demo }: Props) {
   const [elapsed, setElapsed] = useState("");
   const [history, setHistory] = useState<Turn[]>([]);
   const [userMessage, setUserMessage] = useState("");
+  const [userImages, setUserImages] = useState<string[]>([]);
   const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
   const [contexts, setContexts] = useState<ContextItem[]>([]);
   const [text, setText] = useState("");
@@ -124,6 +148,15 @@ export function DemoWorkspace({ demo }: Props) {
   const [fileNames, setFileNames] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [draftNonce, setDraftNonce] = useState(0);
+  const blobUrlsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    return () => {
+      for (const src of blobUrlsRef.current) {
+        URL.revokeObjectURL(src);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!busy) return;
@@ -151,7 +184,7 @@ export function DemoWorkspace({ demo }: Props) {
   }
 
   function archiveTurn() {
-    if (!userMessage) return;
+    if (!userMessage && !userImages.length) return;
     turnId.current += 1;
     setHistory((prev) => [
       ...prev,
@@ -160,9 +193,18 @@ export function DemoWorkspace({ demo }: Props) {
         user: userMessage,
         text,
         images: [...images],
+        userImages: [...userImages],
         error: error || undefined,
       },
     ]);
+  }
+
+  function clearAttachments() {
+    const input = fileRef.current;
+    if (input) {
+      input.value = "";
+    }
+    setFileNames([]);
   }
 
   function applyEvent(ev: HubEvent) {
@@ -265,11 +307,13 @@ export function DemoWorkspace({ demo }: Props) {
     if (typeof historyIndex === "number") {
       setHistory((prev) => prev.slice(0, historyIndex));
       setUserMessage("");
+      setUserImages([]);
       resetAssistant();
       setError("");
     } else {
       // Editing the in-flight / latest user turn
       setUserMessage("");
+      setUserImages([]);
       resetAssistant();
       setError("");
     }
@@ -281,14 +325,26 @@ export function DemoWorkspace({ demo }: Props) {
     const label = displayLabel(message, extra);
     if (!label && !canSubmitMessage(message)) return;
 
+    const attachedFiles = fileRef.current?.files
+      ? Array.from(fileRef.current.files)
+      : [];
+    const previewUrls = attachedFiles
+      .filter((f) => f.type.startsWith("image/"))
+      .map((f) => URL.createObjectURL(f));
+    if (previewUrls.length) {
+      blobUrlsRef.current.push(...previewUrls);
+    }
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
     archiveTurn();
     setUserMessage(label || message.trim());
+    setUserImages(previewUrls);
     resetAssistant();
     setError("");
+    clearAttachments();
     setBusy(true);
     setStatusSteps([
       {
@@ -339,9 +395,8 @@ export function DemoWorkspace({ demo }: Props) {
       if (extra) {
         for (const [k, v] of Object.entries(extra)) form.set(k, v);
       }
-      const files = fileRef.current?.files;
-      if (files) {
-        for (const f of Array.from(files)) form.append("files", f);
+      for (const f of attachedFiles) {
+        form.append("files", f);
       }
       if (controller.signal.aborted) {
         setError("Stopped.");
@@ -536,6 +591,7 @@ export function DemoWorkspace({ demo }: Props) {
               <div key={turn.id} className="space-y-4">
                 <UserBubble
                   text={turn.user}
+                  images={turn.userImages}
                   disabled={busy}
                   onEdit={
                     demo.kind === "form"
@@ -560,10 +616,11 @@ export function DemoWorkspace({ demo }: Props) {
               </div>
             ))}
 
-            {userMessage ? (
+            {userMessage || userImages.length ? (
               <div className="space-y-4">
                 <UserBubble
                   text={userMessage}
+                  images={userImages}
                   disabled={busy}
                   onEdit={
                     demo.kind === "form" || busy
