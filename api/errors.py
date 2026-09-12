@@ -56,6 +56,52 @@ def _wait_seconds(raw: str) -> float | None:
     return None
 
 
+def _usage_percent(raw: str) -> int | None:
+    match = re.search(
+        r"limit\s+(\d+(?:\.\d+)?).{0,80}?used\s+(\d+(?:\.\d+)?)",
+        raw,
+        re.I | re.S,
+    )
+    if not match:
+        return None
+    limit = float(match.group(1))
+    used = float(match.group(2))
+    if limit <= 0:
+        return None
+    return max(1, min(100, int(round(100 * used / limit))))
+
+
+def _format_clock(dt) -> str:
+    hour = dt.hour % 12 or 12
+    ampm = "AM" if dt.hour < 12 else "PM"
+    return f"{hour}:{dt.minute:02d} {ampm}"
+
+
+def _refresh_hint(raw: str) -> str:
+    """Clock-time refresh for daily limits; short relative wait otherwise."""
+    from datetime import datetime, timedelta, timezone
+
+    seconds = _wait_seconds(raw)
+    if seconds is None:
+        return " Try again later today."
+    if seconds >= 3600:
+        hours = max(1, int(round(seconds / 3600)))
+        when = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+        return (
+            f" It refreshes around {_format_clock(when)} UTC "
+            f"(in about {hours} hour{'s' if hours != 1 else ''})."
+        )
+    if seconds >= 60:
+        minutes = max(1, int(round(seconds / 60)))
+        when = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+        return (
+            f" It refreshes around {_format_clock(when)} UTC "
+            f"(in about {minutes} minute{'s' if minutes != 1 else ''})."
+        )
+    seconds_i = max(5, int(seconds))
+    return f" Please try again in about {seconds_i} seconds."
+
+
 def _wait_hint(raw: str) -> str:
     seconds = _wait_seconds(raw)
     if seconds is None:
@@ -65,6 +111,16 @@ def _wait_hint(raw: str) -> str:
         return f" Please try again in about {minutes} minute{'s' if minutes != 1 else ''}."
     seconds_i = max(5, int(seconds))
     return f" Please try again in about {seconds_i} seconds."
+
+
+def _daily_usage_message(raw: str) -> str:
+    pct = _usage_percent(raw)
+    capacity = (
+        f"Shared demo capacity is full for now ({pct}% of today's allowance)."
+        if pct is not None
+        else "Shared demo capacity is full for now (100% of today's allowance)."
+    )
+    return capacity + _refresh_hint(raw) + " Try again after that."
 
 
 def humanize_exception(exc: BaseException) -> UserFacingError:
@@ -89,12 +145,8 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
         )
         if daily:
             return UserFacingError(
-                title="Daily usage limit reached",
-                message=(
-                    "This demo has used its allowed tokens for today."
-                    + _wait_hint(raw)
-                    + " Come back after the wait, or update the API key on the host."
-                ),
+                title="Demo usage limit reached",
+                message=_daily_usage_message(raw),
                 code="usage_daily",
             )
         if (

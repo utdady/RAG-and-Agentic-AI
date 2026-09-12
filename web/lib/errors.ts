@@ -11,6 +11,45 @@ function waitSeconds(raw: string): number | null {
   return null;
 }
 
+function usagePercent(raw: string): number | null {
+  const match = raw.match(/limit\s+(\d+(?:\.\d+)?)[\s\S]{0,80}?used\s+(\d+(?:\.\d+)?)/i);
+  if (!match) return null;
+  const limit = Number(match[1]);
+  const used = Number(match[2]);
+  if (!(limit > 0)) return null;
+  return Math.max(1, Math.min(100, Math.round((100 * used) / limit)));
+}
+
+function formatClock(date: Date): string {
+  let hour = date.getHours() % 12;
+  if (hour === 0) hour = 12;
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const ampm = date.getHours() < 12 ? "AM" : "PM";
+  return `${hour}:${minutes} ${ampm}`;
+}
+
+function refreshHint(raw: string): string {
+  const seconds = waitSeconds(raw);
+  if (seconds == null) return " Try again later today.";
+  const when = new Date(Date.now() + seconds * 1000);
+  if (seconds >= 3600) {
+    const hours = Math.max(1, Math.round(seconds / 3600));
+    return (
+      ` It refreshes around ${formatClock(when)} ` +
+      `(in about ${hours} hour${hours === 1 ? "" : "s"}).`
+    );
+  }
+  if (seconds >= 60) {
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    return (
+      ` It refreshes around ${formatClock(when)} ` +
+      `(in about ${minutes} minute${minutes === 1 ? "" : "s"}).`
+    );
+  }
+  const secs = Math.max(5, Math.round(seconds));
+  return ` Please try again in about ${secs} seconds.`;
+}
+
 function waitHint(raw: string): string {
   const seconds = waitSeconds(raw);
   if (seconds == null) return " Please try again in a few minutes.";
@@ -20,6 +59,15 @@ function waitHint(raw: string): string {
   }
   const secs = Math.max(5, Math.round(seconds));
   return ` Please try again in about ${secs} seconds.`;
+}
+
+function dailyUsageMessage(raw: string): string {
+  const pct = usagePercent(raw);
+  const capacity =
+    pct != null
+      ? `Shared demo capacity is full for now (${pct}% of today's allowance).`
+      : "Shared demo capacity is full for now (100% of today's allowance).";
+  return capacity + refreshHint(raw) + " Try again after that.";
 }
 
 function parseError(): FriendlyError {
@@ -62,11 +110,8 @@ export function humanizeError(raw: string, title?: string): FriendlyError {
       waitS >= 3600;
     if (daily) {
       return {
-        title: "Daily usage limit reached",
-        message:
-          "This demo has used its allowed tokens for today." +
-          waitHint(raw) +
-          " Come back after the wait, or update the API key on the host.",
+        title: "Demo usage limit reached",
+        message: dailyUsageMessage(raw),
       };
     }
     return {

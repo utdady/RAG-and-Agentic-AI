@@ -10,9 +10,10 @@ def test_daily_usage_limit():
         "Requested 2739. Please try again in 11m15.216s.'}}"
     )
     err = humanize_message(raw)
-    assert err.title == "Daily usage limit reached"
-    assert "tokens for today" in err.message
-    assert "minute" in err.message
+    assert err.title == "Demo usage limit reached"
+    assert "99%" in err.message or "100%" in err.message
+    assert "allowance" in err.message
+    assert "refreshes around" in err.message
     assert "429" not in err.message
     assert "groq" not in err.message.lower()
 
@@ -21,8 +22,17 @@ def test_long_wait_treated_as_daily_limit():
     err = humanize_exception(
         Exception("429 rate limit exceeded. Please try again in 16145.09s")
     )
-    assert err.title == "Daily usage limit reached"
-    assert "269" in err.message or "minute" in err.message
+    assert err.title == "Demo usage limit reached"
+    assert "100%" in err.message
+    assert "refreshes around" in err.message
+    assert "hour" in err.message
+    assert "269" not in err.message
+
+
+def test_minute_rate_limit():
+    err = humanize_exception(Exception("429 rate limit exceeded TPM try again in 5s"))
+    assert err.title == "Please wait a moment"
+    assert "seconds" in err.message
 
 
 def test_demo_unavailable_for_missing_key():
