@@ -64,9 +64,9 @@ export function humanizeError(raw: string, title?: string): FriendlyError {
       return {
         title: "Daily usage limit reached",
         message:
-          "This demo has used its allowed Groq free-tier tokens for today." +
+          "This demo has used its allowed tokens for today." +
           waitHint(raw) +
-          " Or set a different GROQ_API_KEY on the API host.",
+          " Come back after the wait, or update the API key on the host.",
       };
     }
     return {

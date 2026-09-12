@@ -11,7 +11,7 @@ def test_daily_usage_limit():
     )
     err = humanize_message(raw)
     assert err.title == "Daily usage limit reached"
-    assert "tokens for today" in err.message or "free-tier" in err.message
+    assert "tokens for today" in err.message
     assert "minute" in err.message
     assert "429" not in err.message
     assert "groq" not in err.message.lower()

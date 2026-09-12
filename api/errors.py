@@ -91,9 +91,9 @@ def humanize_exception(exc: BaseException) -> UserFacingError:
             return UserFacingError(
                 title="Daily usage limit reached",
                 message=(
-                    "This demo has used its allowed Groq free-tier tokens for today."
+                    "This demo has used its allowed tokens for today."
                     + _wait_hint(raw)
-                    + " Or set a different GROQ_API_KEY on the API host."
+                    + " Come back after the wait, or update the API key on the host."
                 ),
                 code="usage_daily",
             )

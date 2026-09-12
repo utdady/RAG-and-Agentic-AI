@@ -29,8 +29,8 @@ def get_crew_llm() -> LLM:
             model=f"groq/{model}",
             api_key=api_key,
             temperature=0.3,
-        max_tokens=900,
-    )
+            max_tokens=900,
+        )
 
     model = os.getenv("OLLAMA_MODEL", "llama3.2").strip() or "llama3.2"
     return LLM(
