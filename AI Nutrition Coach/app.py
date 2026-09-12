@@ -132,7 +132,7 @@ def generate_model_response(
     as_html: bool = True,
 ) -> str:
     try:
-        llm, label = get_vision_llm()
+        llm, _label = get_vision_llm()
         msg = HumanMessage(
             content=[
                 {
@@ -155,8 +155,8 @@ def generate_model_response(
                 "Please try again with a clearer meal photo."
             )
         if as_html:
-            return f"<p><em>Model: {label}</em></p>" + format_response_html(raw)
-        return f"_Model: {label}_\n\n{raw}"
+            return format_response_html(raw)
+        return raw
     except Exception as e:
         print(f"Error in generating response: {e}")
         if as_html:

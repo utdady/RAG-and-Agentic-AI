@@ -118,11 +118,10 @@ def run_style_finder(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
             vision = VisionFashionService()
             analysis = process_response(vision.generate_outfit_only_response(b64))
             note = (
-                "_Catalog matching (ResNet50) is off on this host to stay within free-tier "
-                "memory. Set `HUB_HEAVY_RETRIEVAL=1` on a larger instance to enable closest "
-                "catalog-item matching._"
+                "_Catalog matching is off on this host to stay within free-tier memory. "
+                "Showing a vision-based outfit analysis instead._"
             )
-            body = f"{analysis}\n\n---\n\n{note}\n\n_{vision.label}_"
+            body = f"{analysis}\n\n---\n\n{note}"
             yield from finish_text(body, [image(pil_to_b64(img))])
         except Exception as exc:  # noqa: BLE001
             friendly = humanize_exception(exc)
@@ -130,7 +129,7 @@ def run_style_finder(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
             yield done()
         return
 
-    yield thinking("Loading catalog embeddings and ResNet50")
+    yield thinking("Loading catalog embeddings")
     try:
         image_path = Path(path).resolve()
         style_app = _reload_style_finder_modules()
@@ -141,7 +140,16 @@ def run_style_finder(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         extras = []
         if matched is not None:
             extras.append(image(pil_to_b64(matched)))
-        body = f"{analysis}\n\n---\n\n### Catalog match\n\n{meta}\n\n_{status}_"
+        # Drop provider/model prefixes from status (e.g. groq:…).
+        safe_status = status or ""
+        for prefix in ("groq:", "ollama:"):
+            if prefix in safe_status.lower():
+                parts = [p.strip() for p in safe_status.split("|")]
+                parts = [p for p in parts if not p.lower().startswith(prefix)]
+                safe_status = " | ".join(parts)
+        body = f"{analysis}\n\n---\n\n### Catalog match\n\n{meta}"
+        if safe_status:
+            body = f"{body}\n\n_{safe_status}_"
         yield from finish_text(body, extras)
     except Exception as exc:  # noqa: BLE001
         friendly = humanize_exception(exc)

@@ -82,10 +82,8 @@ def analyze_style(image):
         f"{catalog_table_markdown(related)}"
     )
 
-    vision_label = ""
     try:
         vision = _vision()
-        vision_label = vision.label
         raw = vision.generate_fashion_response(
             encoded["base64"],
             match_row,
@@ -97,7 +95,7 @@ def analyze_style(image):
     except Exception as e:
         analysis = (
             f"## Fashion Analysis\n\n"
-            f"Vision LLM unavailable ({e}). See the catalog match below."
+            f"Vision analysis unavailable ({e}). See the catalog match below."
         )
 
     # Show matched catalog image if URL is fetchable; else user image
@@ -111,8 +109,6 @@ def analyze_style(image):
         pass
 
     status = f"Score={score:.3f} | items={len(related)} | {kind}"
-    if vision_label:
-        status = f"{vision_label} | {status}"
     return matched_preview, analysis, meta, status
 
 

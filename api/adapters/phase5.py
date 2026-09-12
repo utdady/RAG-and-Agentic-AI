@@ -17,7 +17,7 @@ def run_meeting_assistant(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     if not path:
         yield from finish_text("Upload meeting audio first.")
         return
-    yield thinking("Transcribing with Whisper-tiny (CPU — this can take a while)")
+    yield thinking("Transcribing audio (this can take a while)")
     prepare_app_import("Meeting Assistant", chdir=True)
     from app import transcript_audio  # noqa: WPS433
 
