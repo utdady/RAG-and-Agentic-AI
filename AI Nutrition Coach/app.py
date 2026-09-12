@@ -24,40 +24,41 @@ from shared.env_load import load_env
 load_env(HERE)
 
 from shared.llm import get_groq_vision_chat, resolve_provider
+from shared.strip_thinking import strip_model_thinking
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "nutrition-coach-dev-key")
 
 ASSISTANT_PROMPT = """
-You are an expert nutritionist. Your task is to analyze the food items displayed in the image and provide a detailed nutritional assessment using the following format:
+You are an expert nutritionist. Analyze the food in the image and write a concise nutritional assessment.
 
-1. **Identification**: List each identified food item clearly, one per line.
-2. **Portion Size & Calorie Estimation**: For each identified food item, specify the portion size and provide an estimated number of calories. Use bullet points with the following structure:
-- **[Food Item]**: [Portion Size], [Number of Calories] calories
+Rules:
+- Output ONLY the final assessment — no chain-of-thought, no <think> tags, no scratch work.
+- Use Markdown (headings and bullets). Do not use HTML tags.
+- Keep the whole answer under ~350 words.
 
-Example:
-*   **Salmon**: 6 ounces, 210 calories
-*   **Asparagus**: 3 spears, 25 calories
+Use this structure:
 
-3. **Total Calories**: Provide the total number of calories for all food items.
+## Identification
+List each food item, one per line.
 
-Example:
-Total Calories: [Number of Calories]
+## Portion size & calories
+- **Item**: portion, N calories
 
-4. **Nutrient Breakdown**: Include a breakdown of key nutrients such as **Protein**, **Carbohydrates**, **Fats**, **Vitamins**, and **Minerals**. Use bullet points, and for each nutrient provide details about the contribution of each food item.
+## Total calories
+Total Calories: N
 
-Example:
-*   **Protein**: Salmon (35g), Asparagus (3g), Tomatoes (1g) = [Total Protein]
+## Nutrient breakdown
+- **Protein**: …
+- **Carbohydrates**: …
+- **Fats**: …
+- **Vitamins / minerals**: brief notes
 
-5. **Health Evaluation**: Evaluate the healthiness of the meal in one paragraph.
+## Health evaluation
+One short paragraph.
 
-6. **Disclaimer**: Include the following exact text as a disclaimer:
-
-The nutritional information and calorie estimates provided are approximate and are based on general food data.
-Actual values may vary depending on factors such as portion size, specific ingredients, preparation methods, and individual variations.
-For precise dietary advice or medical guidance, consult a qualified nutritionist or healthcare provider.
-
-Keep the whole answer concise (under ~600 words). Format your response exactly like the template above to ensure consistency.
+## Disclaimer
+The nutritional information and calorie estimates provided are approximate and are based on general food data. Actual values may vary depending on factors such as portion size, specific ingredients, preparation methods, and individual variations. For precise dietary advice or medical guidance, consult a qualified nutritionist or healthcare provider.
 """
 
 
@@ -81,11 +82,17 @@ def input_image_setup(uploaded_file) -> str:
     return base64.b64encode(bytes_data).decode("utf-8")
 
 
-def format_response(response_text: str) -> str:
+def format_response_html(response_text: str) -> str:
     response_text = re.sub(
         r"\*\*(.*?)\*\*", r"<p><strong>\1</strong></p>", response_text
     )
     response_text = re.sub(r"(?m)^\s*\*\s(.*)", r"<li>\1</li>", response_text)
+    response_text = re.sub(
+        r"(?m)^-\s+\*\*(.*?)\*\*:?(.*)$",
+        r"<li><strong>\1</strong>\2</li>",
+        response_text,
+    )
+    response_text = re.sub(r"(?m)^-\s+(.*)$", r"<li>\1</li>", response_text)
     response_text = re.sub(
         r"(<li>.*?</li>)+",
         lambda match: f"<ul>{match.group(0)}</ul>",
@@ -98,7 +105,11 @@ def format_response(response_text: str) -> str:
 
 
 def generate_model_response(
-    encoded_image: str, user_query: str, assistant_prompt: str
+    encoded_image: str,
+    user_query: str,
+    assistant_prompt: str,
+    *,
+    as_html: bool = True,
 ) -> str:
     try:
         llm, label = get_vision_llm()
@@ -106,7 +117,7 @@ def generate_model_response(
             content=[
                 {
                     "type": "text",
-                    "text": assistant_prompt + "\n\n" + user_query,
+                    "text": assistant_prompt + "\n\nUser question: " + user_query,
                 },
                 {
                     "type": "image_url",
@@ -117,11 +128,20 @@ def generate_model_response(
             ]
         )
         out = llm.invoke([msg])
-        raw = getattr(out, "content", str(out))
-        return f"<p><em>Model: {label}</em></p>" + format_response(raw)
+        raw = strip_model_thinking(getattr(out, "content", str(out)))
+        if not raw:
+            raw = (
+                "I couldn't produce a clean nutrition write-up for this image. "
+                "Please try again with a clearer meal photo."
+            )
+        if as_html:
+            return f"<p><em>Model: {label}</em></p>" + format_response_html(raw)
+        return f"_Model: {label}_\n\n{raw}"
     except Exception as e:
         print(f"Error in generating response: {e}")
-        return f"<p>An error occurred while generating the response: {e}</p>"
+        if as_html:
+            return f"<p>An error occurred while generating the response: {e}</p>"
+        return f"An error occurred while generating the response: {e}"
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -141,7 +161,7 @@ def index():
                 return redirect(url_for("index"))
 
             response = generate_model_response(
-                encoded_image, user_query, ASSISTANT_PROMPT
+                encoded_image, user_query, ASSISTANT_PROMPT, as_html=True
             )
             return render_template(
                 "index.html", user_query=user_query, response=response

@@ -5,12 +5,10 @@ from __future__ import annotations
 import logging
 import re
 
+from shared.strip_thinking import strip_model_thinking
+
 logger = logging.getLogger(__name__)
 
-_THINKING_BLOCK_RE = re.compile(
-    r"<(?:redacted_)?think(?:ing)?>.*?</(?:redacted_)?think(?:ing)?>",
-    re.DOTALL | re.IGNORECASE,
-)
 _ITEMS_SECTION_RE = re.compile(
     r"(?:^|\n)\s*#{0,3}\s*(?:ITEM\s+DETAILS|SIMILAR\s+ITEMS)\b.*",
     re.IGNORECASE | re.DOTALL,
@@ -28,11 +26,6 @@ def format_price(price) -> str:
     if not text or text.lower() in {"?", "nan", "none"}:
         return "?"
     return text if text.startswith("$") else f"${text}"
-
-
-def strip_model_thinking(text: str) -> str:
-    cleaned = _THINKING_BLOCK_RE.sub("", text)
-    return cleaned.strip()
 
 
 def has_items_section(text: str) -> bool:

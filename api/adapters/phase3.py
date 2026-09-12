@@ -165,8 +165,10 @@ def run_nutrition_coach(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     from app import ASSISTANT_PROMPT, generate_model_response  # noqa: WPS433
 
     encoded = base64.b64encode(Path(path).read_bytes()).decode("utf-8")
-    html = generate_model_response(encoded, question, ASSISTANT_PROMPT)
-    yield from finish_text(html)
+    text = generate_model_response(
+        encoded, question, ASSISTANT_PROMPT, as_html=False
+    )
+    yield from finish_text(text)
 
 
 def run_model_compare(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
