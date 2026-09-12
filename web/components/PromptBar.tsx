@@ -3,6 +3,7 @@
 import {
   useEffect,
   useRef,
+  type ClipboardEvent,
   type FormEvent,
   type ReactNode,
   type RefObject,
@@ -94,6 +95,75 @@ function displayType(ext: string) {
   return ext.toUpperCase();
 }
 
+function extFromMime(type: string) {
+  const map: Record<string, string> = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "image/bmp": "bmp",
+    "application/pdf": "pdf",
+  };
+  if (map[type]) return map[type];
+  if (type.startsWith("image/")) return type.slice(6) || "png";
+  return "bin";
+}
+
+function fileMatchesAccept(file: File, accept: string): boolean {
+  const parts = accept
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (!parts.length) return true;
+  const name = (file.name || "").toLowerCase();
+  const type = (file.type || "").toLowerCase();
+  return parts.some((part) => {
+    if (part.endsWith("/*")) {
+      return type.startsWith(part.slice(0, -1));
+    }
+    if (part.startsWith(".")) {
+      return name.endsWith(part) || type.endsWith(part.slice(1));
+    }
+    return type === part;
+  });
+}
+
+function filesFromClipboard(data: DataTransfer | null): File[] {
+  if (!data) return [];
+  const out: File[] = [];
+  const seen = new Set<string>();
+
+  const push = (file: File | null) => {
+    if (!file) return;
+    const key = `${file.type}:${file.size}:${file.name}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(file);
+  };
+
+  if (data.items) {
+    for (const item of Array.from(data.items)) {
+      if (item.kind !== "file") continue;
+      push(item.getAsFile());
+    }
+  }
+  if (!out.length && data.files?.length) {
+    for (const file of Array.from(data.files)) push(file);
+  }
+  return out;
+}
+
+function namedClipboardFile(file: File): File {
+  const name = (file.name || "").trim();
+  if (name && name !== "image.png" && name !== "image.jpg") return file;
+  const ext = extFromMime(file.type || "image/png");
+  return new File([file], `pasted-${Date.now()}.${ext}`, {
+    type: file.type || `image/${ext}`,
+    lastModified: file.lastModified,
+  });
+}
+
 export type AttachmentProps = {
   accept: string;
   multiple?: boolean;
@@ -161,6 +231,35 @@ export function PromptBar({
     attachment.onFilesChange();
   }
 
+  function applyFiles(next: File[]) {
+    if (!attachment) return;
+    const fileInput = attachment.inputRef.current;
+    if (!fileInput) return;
+    const dt = new DataTransfer();
+    for (const file of next) dt.items.add(file);
+    fileInput.files = dt.files;
+    attachment.onFilesChange();
+  }
+
+  function onPaste(e: ClipboardEvent<HTMLInputElement>) {
+    if (!attachment || busy) return;
+    const pasted = filesFromClipboard(e.clipboardData)
+      .filter((f) => fileMatchesAccept(f, attachment.accept))
+      .map(namedClipboardFile);
+    if (!pasted.length) return;
+
+    // Attach matching files; leave text-only pastes alone.
+    e.preventDefault();
+    if (attachment.multiple) {
+      const existing = attachment.inputRef.current?.files
+        ? Array.from(attachment.inputRef.current.files)
+        : [];
+      applyFiles([...existing, ...pasted]);
+      return;
+    }
+    applyFiles([pasted[pasted.length - 1]]);
+  }
+
   return (
     <form onSubmit={handle} className="space-y-2" autoComplete="off">
       {extra}
@@ -212,6 +311,7 @@ export function PromptBar({
               disabled={busy}
               onClick={() => attachment.inputRef.current?.click()}
               aria-label="Attach file"
+              title="Attach file"
               className="shrink-0 rounded-xl p-2 hover:bg-[var(--bg)] disabled:opacity-60"
             >
               <AttachIcon />
@@ -230,6 +330,7 @@ export function PromptBar({
           disabled={busy}
           defaultValue={draftNonce > 0 ? draft : undefined}
           placeholder={placeholder}
+          onPaste={onPaste}
           className="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm outline-none placeholder:text-[var(--txt2)] disabled:opacity-60"
         />
         {busy ? (

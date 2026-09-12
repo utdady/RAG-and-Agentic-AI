@@ -408,10 +408,10 @@ export const DEMOS: Demo[] = [
     title: "Style Finder",
     tagline: "Match an outfit photo to a fashion catalog.",
     description:
-      "Attach a photo of an outfit. The vision pipeline embeds the image and finds the closest matches in a fashion catalog, showing similar styles and items.",
+      "Paste or attach a photo of an outfit. The vision pipeline embeds the image and finds the closest matches in a fashion catalog, showing similar styles and items.",
     tips: [
       "Use a clear, well-lit photo with the outfit fully visible.",
-      "Attach the image with the paperclip, then send — a message is optional but you can ask “find similar items.”",
+      "Paste an image into the prompt (Ctrl/Cmd+V) or use the paperclip — a message is optional, or ask “find similar items.”",
       "Try different angles or crop to the outfit if matches seem off.",
     ],
     phase: 3,
@@ -426,7 +426,7 @@ export const DEMOS: Demo[] = [
     description:
       "Attach a meal photo and ask about calories, macros, or healthier swaps. The vision model describes what it sees and gives practical nutrition notes.",
     tips: [
-      "Attach the photo first, then ask a specific question — calories, protein, or healthier swaps.",
+      "Paste or attach the meal photo first, then ask about calories, protein, or healthier swaps.",
       "Mention portion size or ingredients if they’re not obvious in the image.",
       "Treat output as rough guidance, not medical or dietary advice.",
     ],
@@ -461,7 +461,7 @@ export const DEMOS: Demo[] = [
       "Attach a food photo and pick a workflow: generate a recipe from what you see, or run a nutrition analysis. A CrewAI team coordinates vision and writing steps.",
     tips: [
       "Choose recipe or analysis from the dropdown before you run.",
-      "Attach a clear photo of the dish or ingredients, then send.",
+      "Paste or attach a clear photo of the dish or ingredients, then send.",
       "For recipes, mention servings or dietary needs in your message.",
     ],
     phase: 4,
