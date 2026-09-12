@@ -76,6 +76,29 @@ class VisionFashionService:
             logger.error("Error generating response: %s", e)
             return f"Error generating response: {e}"
 
+    def generate_outfit_only_response(self, user_image_base64: str) -> str:
+        """Retail-style write-up from the photo alone (no catalog match)."""
+        assistant_prompt = (
+            "You are writing a professional retail catalog analysis of the clothing "
+            "in this image.\n\n"
+            "There is no catalog match available — base everything on what you see.\n\n"
+            "Describe objectively:\n"
+            "1. Garment types, colors, patterns, and materials\n"
+            "2. Overall style category (e.g. business, casual, athleisure)\n"
+            "3. Fit and construction details you can see\n"
+            "4. 2–3 short styling suggestions a shopper might try\n\n"
+            "Use formal, clinical language. Do not invent brand names, prices, or product "
+            "SKUs. Output only the final analysis with no reasoning or thinking tags."
+        )
+        response = self.generate_response(user_image_base64, assistant_prompt)
+        if len(response) < 80:
+            response = (
+                "## Fashion Analysis\n\n"
+                "This outfit features coordinated pieces. Upload again or try a clearer "
+                "full-body photo for a richer description."
+            )
+        return response
+
     def generate_fashion_response(
         self,
         user_image_base64: str,

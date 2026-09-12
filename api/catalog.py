@@ -94,7 +94,7 @@ DEMOS = [
     {
         "slug": "style-finder",
         "title": "Style Finder",
-        "tagline": "Match an outfit photo to a fashion catalog.",
+        "tagline": "Outfit photo → retail-style fashion analysis.",
         "phase": 3,
         "kind": "image",
         "github": "Style%20Finder",

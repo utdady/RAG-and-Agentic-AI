@@ -21,10 +21,12 @@ _RETIRED_GROQ_VISION_MARKERS = (
 
 
 def hub_heavy_retrieval() -> bool:
-    """Use MiniLM + Chroma when true; BM25/keyword when false (default).
+    """Use heavy local models when true; lightweight hub paths when false (default).
 
-    Free/small Render instances OOM on sentence-transformers. Set
-    HUB_HEAVY_RETRIEVAL=1 on hosts with ~1GB+ RAM when you want semantic RAG.
+    Free/small Render instances OOM on sentence-transformers / ResNet50.
+    When false: DocChat BM25, Food keyword, Icebreaker text context, Style Finder
+    vision-only (no catalog match). Set HUB_HEAVY_RETRIEVAL=1 on hosts with
+    ~1GB+ RAM for MiniLM/Chroma and Style Finder ResNet matching.
     """
     raw = os.getenv("HUB_HEAVY_RETRIEVAL", "").strip().lower()
     return raw in {"1", "true", "yes", "on"}

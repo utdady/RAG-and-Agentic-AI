@@ -406,13 +406,13 @@ export const DEMOS: Demo[] = [
   {
     slug: "style-finder",
     title: "Style Finder",
-    tagline: "Match an outfit photo to a fashion catalog.",
+    tagline: "Outfit photo → retail-style fashion analysis.",
     description:
-      "Paste or attach a photo of an outfit. The vision pipeline embeds the image and finds the closest matches in a fashion catalog, showing similar styles and items.",
+      "Paste or attach a photo of an outfit for a vision LLM write-up (colors, garments, style). On larger hosts with heavy retrieval enabled, the demo also matches against a ResNet fashion catalog.",
     tips: [
       "Use a clear, well-lit photo with the outfit fully visible.",
-      "Paste an image into the prompt (Ctrl/Cmd+V) or use the paperclip — a message is optional, or ask “find similar items.”",
-      "Try different angles or crop to the outfit if matches seem off.",
+      "Paste an image into the prompt (Ctrl/Cmd+V) or use the paperclip — a message is optional.",
+      "On the free-tier API, catalog matching is skipped; you still get a full outfit analysis.",
     ],
     phase: 3,
     kind: "image",

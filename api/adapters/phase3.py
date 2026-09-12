@@ -5,9 +5,16 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from api.adapters.common import finish_text, pin_groq_vision_model, pil_to_b64, require_groq
+from api.adapters.common import (
+    finish_text,
+    hub_heavy_retrieval,
+    pin_groq_vision_model,
+    pil_to_b64,
+    require_groq,
+)
 from api.bootstrap import prepare_app_import, prepare_demo_import
-from api.events import image, thinking
+from api.errors import humanize_exception
+from api.events import done, error, image, thinking
 
 
 def run_data_viz(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
@@ -88,19 +95,58 @@ def run_style_finder(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     if not path:
         yield from finish_text("Upload an outfit photo first.")
         return
-    yield thinking("Loading catalog embeddings and ResNet50")
+
     from PIL import Image as PILImage  # noqa: WPS433
 
-    style_app = _reload_style_finder_modules()
-    analyze_style = style_app.analyze_style
+    # Free / small hosts: vision-only — ResNet50 + pickle OOMs ~512MB Render.
+    if not hub_heavy_retrieval():
+        yield thinking("Vision outfit analysis (catalog match skipped on free tier)")
+        try:
+            image_path = Path(path).resolve()
+            pin_groq_vision_model()
+            prepare_demo_import("Style Finder", chdir=True)
+            import io
 
-    img = PILImage.open(path).convert("RGB")
-    matched, analysis, meta, status = analyze_style(img)
-    extras = []
-    if matched is not None:
-        extras.append(image(pil_to_b64(matched)))
-    body = f"{analysis}\n\n---\n\n### Catalog match\n\n{meta}\n\n_{status}_"
-    yield from finish_text(body, extras)
+            from helpers import process_response  # noqa: WPS433
+            from llm_service import VisionFashionService  # noqa: WPS433
+
+            img = PILImage.open(image_path).convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+            vision = VisionFashionService()
+            analysis = process_response(vision.generate_outfit_only_response(b64))
+            note = (
+                "_Catalog matching (ResNet50) is off on this host to stay within free-tier "
+                "memory. Set `HUB_HEAVY_RETRIEVAL=1` on a larger instance to enable closest "
+                "catalog-item matching._"
+            )
+            body = f"{analysis}\n\n---\n\n{note}\n\n_{vision.label}_"
+            yield from finish_text(body, [image(pil_to_b64(img))])
+        except Exception as exc:  # noqa: BLE001
+            friendly = humanize_exception(exc)
+            yield error(friendly.message, title=friendly.title)
+            yield done()
+        return
+
+    yield thinking("Loading catalog embeddings and ResNet50")
+    try:
+        image_path = Path(path).resolve()
+        style_app = _reload_style_finder_modules()
+        analyze_style = style_app.analyze_style
+
+        img = PILImage.open(image_path).convert("RGB")
+        matched, analysis, meta, status = analyze_style(img)
+        extras = []
+        if matched is not None:
+            extras.append(image(pil_to_b64(matched)))
+        body = f"{analysis}\n\n---\n\n### Catalog match\n\n{meta}\n\n_{status}_"
+        yield from finish_text(body, extras)
+    except Exception as exc:  # noqa: BLE001
+        friendly = humanize_exception(exc)
+        yield error(friendly.message, title=friendly.title)
+        yield done()
 
 
 def run_nutrition_coach(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
