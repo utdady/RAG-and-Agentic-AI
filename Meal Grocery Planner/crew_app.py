@@ -260,7 +260,7 @@ def run_planner_lite(
     from langchain_core.messages import HumanMessage, SystemMessage
 
     from shared.llm import get_chat_llm, invoke_chat
-    from shared.strip_thinking import strip_thinking
+    from shared.strip_thinking import strip_model_thinking
 
     diet = (dietary_restrictions or "").strip() or "none"
     nutrition_line = (
@@ -305,4 +305,4 @@ def run_planner_lite(
             part.get("text", "") if isinstance(part, dict) else str(part)
             for part in text
         )
-    return strip_thinking(str(text)).strip() or str(text)
+    return strip_model_thinking(str(text)).strip() or str(text)
