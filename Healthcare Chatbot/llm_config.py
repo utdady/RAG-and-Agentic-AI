@@ -4,7 +4,15 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
+from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from shared.llm import resolve_groq_model
 
 logging.getLogger("autogen.oai.client").setLevel(logging.ERROR)
 
@@ -26,7 +34,7 @@ def get_config_list() -> list[dict[str, Any]]:
         api_key = os.getenv("GROQ_API_KEY", "").strip()
         if not api_key:
             raise RuntimeError("Set GROQ_API_KEY in repo-root .env (or LLM_PROVIDER=ollama).")
-        model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant").strip()
+        model = resolve_groq_model()
         return [{"model": model, "api_key": api_key, "api_type": "groq"}]
 
     model = os.getenv("OLLAMA_MODEL", "llama3.2").strip() or "llama3.2"

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from shared.llm import get_groq_vision_chat
+from shared.llm import get_groq_vision_chat, resolve_groq_model
 
 
 def get_crew_llm() -> LLM:
@@ -24,7 +24,7 @@ def get_crew_llm() -> LLM:
         api_key = os.getenv("GROQ_API_KEY", "").strip()
         if not api_key:
             raise RuntimeError("Set GROQ_API_KEY in repo-root .env")
-        model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant").strip()
+        model = resolve_groq_model()
         return LLM(
             model=f"groq/{model}",
             api_key=api_key,
