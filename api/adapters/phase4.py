@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from api.adapters.common import finish_text, require_groq
-from api.bootstrap import add_app, prepare_app_import
+from api.bootstrap import prepare_app_import
 from api.events import task, thinking
 
 
@@ -53,7 +53,8 @@ def run_meal_planner(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     include_nutrition = bool(payload.get("include_nutrition", True))
     yield thinking("Running sequential meal-planning crew")
     yield task("plan", "Meal plan", "running")
-    add_app("Meal Grocery Planner", chdir=True)
+    # Clear cached NourishBot `crew_app` (same module name, no run_planner).
+    prepare_app_import("Meal Grocery Planner", chdir=True)
     from crew_app import run_planner  # noqa: WPS433
 
     text = run_planner(
@@ -76,7 +77,7 @@ def run_healthcare(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     mode = (payload.get("mode") or "symptoms").strip().lower()
     message = (payload.get("message") or "").strip()
     yield thinking("Educational multi-agent consult")
-    add_app("Healthcare Chatbot", chdir=True)
+    prepare_app_import("Healthcare Chatbot", chdir=True)
     disclaimer = (
         "Educational demo only — not medical or mental-health care. "
         "If you need help, contact a licensed clinician or emergency services.\n\n"
