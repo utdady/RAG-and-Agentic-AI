@@ -16,14 +16,22 @@ OUTPUTS = HERE / "outputs"
 
 
 def build_crew(*, include_nutrition: bool = True) -> Crew:
-    if not os.getenv("SERPER_API_KEY", "").strip():
-        raise RuntimeError(
-            "Set SERPER_API_KEY in repo-root .env (https://serper.dev)."
-        )
-
     OUTPUTS.mkdir(parents=True, exist_ok=True)
     llm = get_crew_llm()
-    search = SerperDevTool()
+
+    # Hub demos often omit Serper; agents then plan from model knowledge only.
+    search_tools: list = []
+    if os.getenv("SERPER_API_KEY", "").strip():
+        search_tools = [SerperDevTool()]
+
+    research_hint = (
+        "Search the web for current recipes and prices."
+        if search_tools
+        else (
+            "Web search is unavailable — use solid culinary knowledge to invent "
+            "a realistic recipe, ingredients, and approximate prices."
+        )
+    )
 
     meal_planner = Agent(
         role="Meal Planner & Recipe Researcher",
@@ -32,7 +40,7 @@ def build_crew(*, include_nutrition: bool = True) -> Crew:
             "A skilled meal planner who researches recipes online, considering "
             "dietary needs, cooking skill, and budget."
         ),
-        tools=[search],
+        tools=search_tools,
         llm=llm,
         verbose=True,
     )
@@ -56,18 +64,17 @@ def build_crew(*, include_nutrition: bool = True) -> Crew:
             "A budget-conscious shopper who helps families save on groceries "
             "while respecting dietary needs."
         ),
-        tools=[search],
+        tools=search_tools,
         llm=llm,
         verbose=True,
     )
 
     meal_planning_task = Task(
         description=(
-            "Search for the best '{meal_name}' recipe for {servings} people "
-            "within a {budget} budget. Consider dietary restrictions: "
-            "{dietary_restrictions} and cooking skill level: {cooking_skill}. "
-            "Find recipes that match the skill level and provide complete "
-            "ingredient lists with quantities."
+            f"{research_hint} Create the best '{{meal_name}}' recipe for "
+            "{servings} people within a {budget} budget. Consider dietary "
+            "restrictions: {dietary_restrictions} and cooking skill level: "
+            "{cooking_skill}. Provide complete ingredient lists with quantities."
         ),
         expected_output=(
             "A detailed meal plan with researched ingredients, quantities, "
@@ -159,7 +166,7 @@ def build_crew(*, include_nutrition: bool = True) -> Crew:
                 "and suggests improvements within budget. Educational only — "
                 "not medical advice."
             ),
-            tools=[search],
+            tools=search_tools,
             llm=llm,
             verbose=True,
         )

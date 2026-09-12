@@ -53,20 +53,60 @@ def run_meal_planner(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     include_nutrition = bool(payload.get("include_nutrition", True))
     yield thinking("Running sequential meal-planning crew")
     yield task("plan", "Meal plan", "running")
-    # Clear cached NourishBot `crew_app` (same module name, no run_planner).
-    prepare_app_import("Meal Grocery Planner", chdir=True)
-    from crew_app import run_planner  # noqa: WPS433
+    try:
+        # Clear cached NourishBot `crew_app` (same module name, no run_planner).
+        prepare_app_import("Meal Grocery Planner", chdir=True)
+        import queue
+        import threading
 
-    text = run_planner(
-        meal_name=meal,
-        servings=servings,
-        budget=budget,
-        dietary_restrictions=dietary,
-        cooking_skill=skill,
-        include_nutrition=include_nutrition,
-    )
-    yield task("plan", "Meal plan", "completed")
-    yield from finish_text(str(text))
+        from crew_app import run_planner  # noqa: WPS433
+
+        result_q: queue.Queue[tuple[str, object]] = queue.Queue()
+
+        def _worker() -> None:
+            try:
+                text = run_planner(
+                    meal_name=meal,
+                    servings=servings,
+                    budget=budget,
+                    dietary_restrictions=dietary,
+                    cooking_skill=skill,
+                    include_nutrition=include_nutrition,
+                )
+                result_q.put(("ok", text))
+            except Exception as exc:  # noqa: BLE001
+                result_q.put(("err", exc))
+
+        worker = threading.Thread(target=_worker, daemon=True)
+        worker.start()
+        waited = 0
+        while worker.is_alive():
+            worker.join(10)
+            waited += 10
+            if worker.is_alive():
+                yield thinking(f"Still planning your meal… ({waited}s)")
+
+        kind, payload_or_exc = result_q.get()
+        if kind == "err":
+            from api.errors import humanize_exception
+            from api.events import done, error
+
+            friendly = humanize_exception(payload_or_exc)  # type: ignore[arg-type]
+            yield task("plan", "Meal plan", "failed")
+            yield error(friendly.message, title=friendly.title)
+            yield done()
+            return
+
+        yield task("plan", "Meal plan", "completed")
+        yield from finish_text(str(payload_or_exc))
+    except Exception as exc:  # noqa: BLE001
+        from api.errors import humanize_exception
+        from api.events import done, error
+
+        friendly = humanize_exception(exc)
+        yield task("plan", "Meal plan", "failed")
+        yield error(friendly.message, title=friendly.title)
+        yield done()
 
 
 def run_healthcare(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:

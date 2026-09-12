@@ -4,6 +4,8 @@ const API = process.env.API_PROXY_URL ?? "http://127.0.0.1:8080";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** Long CrewAI / vision demos need more than the default serverless limit. */
+export const maxDuration = 300;
 
 async function proxy(
   req: NextRequest,
