@@ -148,7 +148,7 @@ def format_analysis_output(final_output: dict) -> str:
 
 
 def analyze_food(image, dietary_restrictions, workflow_type):
-    if image is None:
+    if image is None or image == "":
         return "Upload an image first."
 
     try:
@@ -160,15 +160,16 @@ def analyze_food(image, dietary_restrictions, workflow_type):
     UPLOADS.mkdir(parents=True, exist_ok=True)
     image_path = str(UPLOADS / "uploaded_image.jpg")
     try:
-        image.save(image_path)
-    except Exception:
-        # Gradio may pass a path string in some versions
         from PIL import Image as PILImage
 
         if isinstance(image, (str, Path)):
-            PILImage.open(image).convert("RGB").save(image_path)
+            PILImage.open(image).convert("RGB").save(image_path, format="JPEG", quality=90)
+        elif hasattr(image, "save"):
+            image.convert("RGB").save(image_path, format="JPEG", quality=90)
         else:
             return "Could not save uploaded image."
+    except Exception as e:
+        return f"Could not save uploaded image: {e}"
 
     dietary = (dietary_restrictions or "").strip()
     workflow = (workflow_type or "recipe").strip().lower()

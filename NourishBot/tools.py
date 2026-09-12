@@ -1,10 +1,7 @@
 """CrewAI tools for ingredient extraction, filtering, and nutrient analysis."""
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 from crewai.tools import tool
 
@@ -28,25 +25,26 @@ def extract_ingredients(image_input: str) -> str:
 
 
 @tool("Filter ingredients")
-def filter_ingredients(raw_ingredients: str) -> List[str]:
+def filter_ingredients(raw_ingredients: str) -> str:
     """
-    Clean raw ingredient text into a list of food items.
+    Clean raw ingredient text into a comma-separated list of food items.
 
     Args:
         raw_ingredients: Raw ingredients as a comma- or newline-separated string.
     """
     text = (raw_ingredients or "").replace("\n", ",")
-    return [
+    items = [
         ingredient.strip().lower()
         for ingredient in text.split(",")
         if ingredient.strip()
     ]
+    return ", ".join(items)
 
 
 @tool("Filter based on dietary restrictions")
 def filter_based_on_restrictions(
-    ingredients: str, dietary_restrictions: Optional[str] = None
-) -> List[str]:
+    ingredients: str, dietary_restrictions: str = ""
+) -> str:
     """
     Filter ingredients for dietary restrictions using a text LLM.
 
@@ -59,8 +57,8 @@ def filter_based_on_restrictions(
         for i in (ingredients or "").replace("\n", ",").split(",")
         if i.strip()
     ]
-    if not dietary_restrictions or not str(dietary_restrictions).strip():
-        return items
+    if not (dietary_restrictions or "").strip():
+        return ", ".join(items)
 
     from shared.llm import get_chat_llm
 
@@ -75,7 +73,8 @@ def filter_based_on_restrictions(
     )
     out = llm.invoke(prompt)
     filtered = getattr(out, "content", str(out)).strip().lower()
-    return [item.strip() for item in filtered.split(",") if item.strip()]
+    cleaned = [item.strip() for item in filtered.split(",") if item.strip()]
+    return ", ".join(cleaned)
 
 
 @tool("Analyze nutritional values and calories of the dish from uploaded image")

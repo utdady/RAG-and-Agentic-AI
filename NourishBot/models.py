@@ -1,7 +1,5 @@
 """Pydantic schemas for structured crew outputs."""
 
-from __future__ import annotations
-
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -54,3 +52,11 @@ class NutrientAnalysisOutput(BaseModel):
     health_evaluation: Optional[str] = Field(
         None, description="Health evaluation summary"
     )
+
+
+Recipe.model_rebuild()
+RecipeSuggestionOutput.model_rebuild()
+VitaminInfo.model_rebuild()
+MineralInfo.model_rebuild()
+NutrientBreakdown.model_rebuild()
+NutrientAnalysisOutput.model_rebuild()

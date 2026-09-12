@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 from api.adapters.common import finish_text, require_groq
@@ -21,12 +22,22 @@ def run_nourishbot(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         return
     yield thinking("CrewAI nutrition crew")
     yield task("crew", "NourishBot crew", "running")
-    prepare_app_import("NourishBot", chdir=True)
-    from app import analyze_food  # noqa: WPS433
+    try:
+        image_path = Path(path).resolve()
+        prepare_app_import("NourishBot", chdir=True)
+        from app import analyze_food  # noqa: WPS433
 
-    text = analyze_food(path, dietary, workflow)
-    yield task("crew", "NourishBot crew", "completed")
-    yield from finish_text(str(text))
+        text = analyze_food(str(image_path), dietary, workflow)
+        yield task("crew", "NourishBot crew", "completed")
+        yield from finish_text(str(text))
+    except Exception as exc:  # noqa: BLE001
+        from api.errors import humanize_exception
+        from api.events import done, error
+
+        friendly = humanize_exception(exc)
+        yield task("crew", "NourishBot crew", "failed")
+        yield error(friendly.message, title=friendly.title)
+        yield done()
 
 
 def run_meal_planner(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
