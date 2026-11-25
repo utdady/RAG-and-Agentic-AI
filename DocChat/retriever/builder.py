@@ -7,6 +7,7 @@ from langchain_community.retrievers import BM25Retriever
 from langchain_community.vectorstores import Chroma
 
 from config import settings
+from shared.bm25_tokenize import _tokenize
 from shared.embeddings import get_embedding_model
 from utils.logging import logger
 
@@ -23,7 +24,7 @@ class RetrieverBuilder:
                 embedding=self.embeddings,
                 persist_directory=str(settings.CHROMA_DB_PATH),
             )
-            bm25 = BM25Retriever.from_documents(docs)
+            bm25 = BM25Retriever.from_documents(docs, preprocess_func=_tokenize)
             bm25.k = settings.VECTOR_SEARCH_K
             vector_retriever = vector_store.as_retriever(
                 search_kwargs={"k": settings.VECTOR_SEARCH_K}

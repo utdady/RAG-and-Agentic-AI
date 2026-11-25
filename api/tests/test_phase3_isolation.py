@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import os
 import sys
+
+import pytest
 
 from api.bootstrap import prepare_demo_import
 from api.diagnostics.runner_util import collect_events, summarize_events
+
+pytestmark = [
+    pytest.mark.live,
+    pytest.mark.skipif(not os.getenv("GROQ_API_KEY"), reason="needs GROQ_API_KEY"),
+]
 
 
 def test_data_viz_after_math_assistant():

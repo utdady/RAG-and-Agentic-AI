@@ -111,6 +111,8 @@ def run_docchat(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
     from api.events import done, error
     from langchain_community.retrievers import BM25Retriever
 
+    from shared.bm25_tokenize import _tokenize
+
     prepare_demo_import("DocChat", chdir=True)
     import importlib
 
@@ -146,7 +148,9 @@ def run_docchat(payload: dict[str, Any]) -> Iterator[dict[str, Any]]:
         else:
             # Default: BM25-only — MiniLM + Chroma OOMs free/small Render instances.
             # Set HUB_HEAVY_RETRIEVAL=1 when the host has ~1GB+ RAM.
-            retriever = BM25Retriever.from_documents(chunks)
+            retriever = BM25Retriever.from_documents(
+                chunks, preprocess_func=_tokenize
+            )
             retriever.k = 6
         yield task("index", "Document indexer", "completed")
     except Exception as exc:  # noqa: BLE001
